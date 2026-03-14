@@ -12,7 +12,6 @@ import {
   DollarSign,
   Zap,
   Target,
-  AlertTriangle,
   Mail,
   Lock,
   Star,
@@ -205,9 +204,16 @@ export function LeakageAssessment() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-            className="w-20 h-20 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-8"
+            className="relative w-28 h-28 mx-auto mb-8"
           >
-            <AlertTriangle className="w-10 h-10 text-red-500" />
+            {/* Animated red glow ring */}
+            <div className="absolute inset-0 rounded-full bg-red-600/30 animate-ping" style={{ animationDuration: '3s' }} />
+            <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-red-600 to-red-800 opacity-75 blur-sm" />
+            <img
+              src="https://storage.googleapis.com/msgsndr/5yufDyfhuTKFx8nCQCP6/media/67cf74cf3d10884c18db2871.webp"
+              alt="Jeremy"
+              className="relative w-28 h-28 rounded-full object-cover object-top border-3 border-red-600 shadow-[0_0_30px_rgba(220,38,38,0.4)]"
+            />
           </motion.div>
 
           <motion.p
@@ -263,24 +269,27 @@ export function LeakageAssessment() {
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </motion.button>
 
-          {/* Social proof */}
+          {/* Personal credibility */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.8 }}
-            className="mt-8 flex items-center justify-center gap-4 text-gray-500 text-sm"
+            className="mt-10 flex flex-col items-center gap-3"
           >
-            <div className="flex -space-x-2">
-              {['S', 'M', 'J', 'A'].map((initial, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-gray-800 border-2 border-black flex items-center justify-center text-xs font-bold text-gray-400"
-                >
-                  {initial}
-                </div>
-              ))}
+            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/10">
+              <img
+                src="https://storage.googleapis.com/msgsndr/5yufDyfhuTKFx8nCQCP6/media/67cf74cf3d10884c18db2871.webp"
+                alt="Jeremy"
+                className="w-9 h-9 rounded-full object-cover object-top border-2 border-red-600"
+              />
+              <div className="text-left">
+                <p className="text-white text-sm font-semibold leading-tight">Jeremy</p>
+                <p className="text-gray-500 text-xs">Fractional CAIO & Business Strategist</p>
+              </div>
             </div>
-            <span>327 entrepreneurs have made the shift from operator to CEO</span>
+            <p className="text-gray-500 text-sm">
+              327 founders have made the shift from operator to CEO
+            </p>
           </motion.div>
         </motion.div>
       </div>
