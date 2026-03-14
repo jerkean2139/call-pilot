@@ -210,7 +210,7 @@ export function LeakageAssessment() {
             <div className="absolute inset-0 rounded-full bg-red-600/30 animate-ping" style={{ animationDuration: '3s' }} />
             <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-red-600 to-red-800 opacity-75 blur-sm" />
             <img
-              src="/jeremy.jpg"
+              src="https://storage.googleapis.com/msgsndr/5yufDyfhuTKFx8nCQCP6/media/67cf74cf3d10884c18db2871.webp"
               alt="Jeremy"
               className="relative w-28 h-28 rounded-full object-cover object-top border-3 border-red-600 shadow-[0_0_30px_rgba(220,38,38,0.4)]"
             />
@@ -278,7 +278,7 @@ export function LeakageAssessment() {
           >
             <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/10">
               <img
-                src="/jeremy.jpg"
+                src="https://storage.googleapis.com/msgsndr/5yufDyfhuTKFx8nCQCP6/media/67cf74cf3d10884c18db2871.webp"
                 alt="Jeremy"
                 className="w-9 h-9 rounded-full object-cover object-top border-2 border-red-600"
               />
