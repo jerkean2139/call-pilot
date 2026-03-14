@@ -210,15 +210,23 @@ export function LeakageAssessment() {
             <AlertTriangle className="w-10 h-10 text-red-500" />
           </motion.div>
 
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="text-sm uppercase tracking-widest text-red-400 font-semibold mb-4"
+          >
+            Stop being the bottleneck. Start being the CEO.
+          </motion.p>
+
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="text-3xl md:text-5xl font-montserrat font-bold text-white mb-6 leading-tight"
           >
-            The average small business leaks{' '}
-            <span className="text-red-500">$12,000–$47,000/month</span>{' '}
-            in operational waste.
+            You're not running your business.{' '}
+            <span className="text-red-500">It's running you.</span>
           </motion.h1>
 
           <motion.p
@@ -227,7 +235,9 @@ export function LeakageAssessment() {
             transition={{ delay: 0.8 }}
             className="text-xl text-gray-400 mb-4"
           >
-            Most founders have no idea it's happening.
+            Every founder hits a ceiling — drowning in ops, fighting fires, losing{' '}
+            <span className="text-red-400 font-semibold">$12,000–$47,000/month</span>{' '}
+            to operational chaos they can't even see.
           </motion.p>
 
           <motion.p
@@ -236,8 +246,10 @@ export function LeakageAssessment() {
             transition={{ delay: 1 }}
             className="text-lg text-gray-500 mb-10"
           >
-            This 3-minute assessment calculates <span className="text-white font-semibold">YOUR number</span>.
-            Most people are shocked.
+            This 3-minute assessment reveals exactly where your business is bleeding cash —
+            and whether you need a <span className="text-white font-semibold">business coach</span> or
+            a <span className="text-white font-semibold">fractional Chief AI Officer</span> to
+            turn you from operator into CEO.
           </motion.p>
 
           <motion.button
@@ -247,7 +259,7 @@ export function LeakageAssessment() {
             onClick={() => setScreen('leakage')}
             className="bg-red-600 hover:bg-red-700 text-white px-10 py-4 rounded-lg font-bold text-lg transition-colors group inline-flex items-center gap-2"
           >
-            See My Number
+            Find Out What You're Losing
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </motion.button>
 
@@ -268,7 +280,7 @@ export function LeakageAssessment() {
                 </div>
               ))}
             </div>
-            <span>327 entrepreneurs assessed this month</span>
+            <span>327 entrepreneurs have made the shift from operator to CEO</span>
           </motion.div>
         </motion.div>
       </div>
@@ -347,7 +359,7 @@ export function LeakageAssessment() {
             transition={{ delay: 0.6 }}
             className="text-2xl font-montserrat font-bold text-white mb-3"
           >
-            That's what you're leaking.
+            That's what's keeping you stuck as the operator — not the CEO.
           </motion.h2>
 
           <motion.p
@@ -356,7 +368,7 @@ export function LeakageAssessment() {
             transition={{ delay: 0.9 }}
             className="text-gray-400 mb-4"
           >
-            Now let's calculate what happens when you plug the holes.
+            Now let's see what your business looks like when you stop doing everything yourself.
           </motion.p>
 
           <motion.p
@@ -365,8 +377,8 @@ export function LeakageAssessment() {
             transition={{ delay: 1.1 }}
             className="text-sm text-gray-500 mb-10"
           >
-            The next questions calculate your <span className="text-emerald-400 font-semibold">recovery potential</span> —
-            the money you'd make back if you fixed this.
+            The next questions calculate your <span className="text-emerald-400 font-semibold">CEO potential</span> —
+            the revenue, time, and freedom you unlock with the right strategy.
           </motion.p>
 
           <motion.button
@@ -379,7 +391,7 @@ export function LeakageAssessment() {
             }}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-10 py-4 rounded-lg font-bold text-lg transition-colors inline-flex items-center gap-2 group"
           >
-            Show Me My Upside
+            Show Me My CEO Potential
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </motion.button>
         </motion.div>
@@ -472,7 +484,7 @@ export function LeakageAssessment() {
       <div className="bg-black text-white py-6 px-4">
         <div className="max-w-5xl mx-auto text-center">
           <h1 className="text-xl md:text-2xl font-montserrat font-bold mb-1">
-            How Much Is Chaos Costing Your Business?
+            What's Standing Between You and CEO Mode?
           </h1>
           {/* Phase indicator */}
           <div className="flex items-center justify-center gap-4 mt-3">
