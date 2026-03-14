@@ -27,7 +27,7 @@ function App() {
       <Router>
         <Routes>
           {/* Leakage routes — standalone full-screen layout, no header */}
-          <Route path="/" element={<Navigate to="/leakage" replace />} />
+          <Route path="/" element={<LeakageAssessment />} />
           <Route path="/leakage" element={<LeakageAssessment />} />
           <Route path="/leakage/results" element={<LeakageResults />} />
 
