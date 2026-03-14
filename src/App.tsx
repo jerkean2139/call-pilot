@@ -8,6 +8,8 @@ import { AssessmentPage } from './pages/AssessmentPage';
 import { GuidePage } from './pages/GuidePage';
 import { ReportsPage } from './pages/ReportsPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { LeakageAssessment } from './pages/LeakageAssessment';
+import { LeakageResults } from './pages/LeakageResults';
 
 const queryClient = new QueryClient();
 
@@ -25,6 +27,8 @@ function App() {
             <Route path="/admin" element={<AdminPortal />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/leakage" element={<LeakageAssessment />} />
+            <Route path="/leakage/results" element={<LeakageResults />} />
           </Routes>
         </div>
       </Router>

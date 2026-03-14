@@ -11,12 +11,11 @@ export function Header() {
           </Link>
           
           <nav className="flex items-center gap-6">
-            <Link to="/assessment" className="text-gray-600 hover:text-[#FF0000]">Take Assessment</Link>
+            <Link to="/leakage" className="text-gray-600 hover:text-[#FF0000] font-medium">Leakage Calculator</Link>
+            <Link to="/assessment" className="text-gray-600 hover:text-[#FF0000]">Talent Assessment</Link>
             <Link to="/guide" className="text-gray-600 hover:text-[#FF0000]">User Guide</Link>
             <Link to="/reports" className="text-gray-600 hover:text-[#FF0000]">Reports</Link>
-            <Link to="/pricing" className="text-gray-600 hover:text-[#FF0000]">Pricing</Link>
-            <Link to="/onboarding" className="bg-[#FF0000] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#FF0000]/90 transition-colors mr-2">Client Signup</Link>
-            <Link to="/login" className="border border-[#FF0000] text-[#FF0000] px-4 py-2 rounded-lg font-medium hover:bg-red-50 transition-colors">Login</Link>
+            <Link to="/leakage" className="bg-[#FF0000] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#FF0000]/90 transition-colors">Find Your Leakage</Link>
           </nav>
         </div>
       </div>
