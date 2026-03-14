@@ -39,12 +39,11 @@ function useAnimatedNumber(target: number, duration: number = 600) {
 
 // Dynamic pain narration based on leakage thresholds
 function getLeakageNarration(amount: number): string | null {
-  if (amount >= 50000) return "You're funding a competitor's growth with your waste.";
-  if (amount >= 35000) return 'Most businesses this leaky don\'t survive 3 years.';
-  if (amount >= 20000) return 'That\'s a luxury car payment — every single month.';
-  if (amount >= 10000) return 'You\'re burning a full-time salary every month.';
-  if (amount >= 5000) return 'That\'s a contractor you could hire instead.';
-  if (amount >= 2000) return 'Small leaks add up fast.';
+  if (amount >= 6000) return "You're funding a competitor's growth with your waste.";
+  if (amount >= 4500) return 'That\'s a car payment — every single month — going nowhere.';
+  if (amount >= 3000) return 'That could be a part-time hire doing real work instead.';
+  if (amount >= 1500) return 'Small leaks add up — that\'s $18K+ a year.';
+  if (amount >= 500) return 'The cracks are starting to show.';
   return null;
 }
 
@@ -56,7 +55,7 @@ export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculat
 
   // Pulse animation when crossing a threshold
   useEffect(() => {
-    const thresholds = [5000, 10000, 20000, 35000, 50000];
+    const thresholds = [500, 1500, 3000, 4500, 6000];
     const prev = prevLeakageRef.current;
     const crossed = thresholds.some(t => prev < t && monthlyLeakage >= t);
     if (crossed) {
@@ -69,23 +68,23 @@ export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculat
   const narration = getLeakageNarration(monthlyLeakage);
 
   const getSeverityColor = () => {
-    if (monthlyLeakage < 5000) return 'text-green-500';
-    if (monthlyLeakage < 15000) return 'text-yellow-500';
-    if (monthlyLeakage < 30000) return 'text-orange-500';
+    if (monthlyLeakage < 1500) return 'text-green-500';
+    if (monthlyLeakage < 3500) return 'text-yellow-500';
+    if (monthlyLeakage < 6000) return 'text-orange-500';
     return 'text-red-600';
   };
 
   const getSeverityBg = () => {
-    if (monthlyLeakage < 5000) return 'from-green-500/10 to-green-500/5';
-    if (monthlyLeakage < 15000) return 'from-yellow-500/10 to-yellow-500/5';
-    if (monthlyLeakage < 30000) return 'from-orange-500/10 to-orange-500/5';
+    if (monthlyLeakage < 1500) return 'from-green-500/10 to-green-500/5';
+    if (monthlyLeakage < 3500) return 'from-yellow-500/10 to-yellow-500/5';
+    if (monthlyLeakage < 6000) return 'from-orange-500/10 to-orange-500/5';
     return 'from-red-600/10 to-red-600/5';
   };
 
   const getSeverityLabel = () => {
-    if (monthlyLeakage < 5000) return 'Low Risk';
-    if (monthlyLeakage < 15000) return 'Moderate Risk';
-    if (monthlyLeakage < 30000) return 'High Risk';
+    if (monthlyLeakage < 1500) return 'Low Risk';
+    if (monthlyLeakage < 3500) return 'Moderate Risk';
+    if (monthlyLeakage < 6000) return 'High Risk';
     return 'Critical';
   };
 
@@ -149,16 +148,16 @@ export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculat
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                  monthlyLeakage >= 30000
+                  monthlyLeakage >= 6000
                     ? 'bg-red-100 text-red-700'
-                    : monthlyLeakage >= 15000
+                    : monthlyLeakage >= 3500
                     ? 'bg-orange-100 text-orange-700'
-                    : monthlyLeakage >= 5000
+                    : monthlyLeakage >= 1500
                     ? 'bg-yellow-100 text-yellow-700'
                     : 'bg-green-100 text-green-700'
                 }`}
               >
-                {monthlyLeakage >= 15000 && <AlertTriangle className="w-3 h-3" />}
+                {monthlyLeakage >= 3500 && <AlertTriangle className="w-3 h-3" />}
                 {getSeverityLabel()}
               </motion.div>
             )}

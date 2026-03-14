@@ -236,7 +236,7 @@ export function LeakageAssessment() {
             className="text-xl text-gray-400 mb-4"
           >
             Every founder hits a ceiling — drowning in ops, fighting fires, losing{' '}
-            <span className="text-red-400 font-semibold">$12,000–$47,000/month</span>{' '}
+            <span className="text-red-400 font-semibold">$1,500–$6,000/month</span>{' '}
             to operational chaos they can't even see.
           </motion.p>
 

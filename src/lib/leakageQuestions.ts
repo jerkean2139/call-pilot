@@ -44,9 +44,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Think CRM, project management, invoicing, email, spreadsheets...',
     options: [
       { label: 'Everything is integrated', value: 'integrated', leakageMultiplier: 0 },
-      { label: '2-3 disconnected tools', value: 'some', leakageMultiplier: 850 },
-      { label: '4-6 disconnected tools', value: 'many', leakageMultiplier: 2200 },
-      { label: 'I\'ve lost count', value: 'chaos', leakageMultiplier: 4500 },
+      { label: '2-3 disconnected tools', value: 'some', leakageMultiplier: 100 },
+      { label: '4-6 disconnected tools', value: 'many', leakageMultiplier: 275 },
+      { label: 'I\'ve lost count', value: 'chaos', leakageMultiplier: 550 },
     ],
   },
   {
@@ -56,9 +56,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Copy-pasting between tools, updating spreadsheets, re-entering info...',
     options: [
       { label: 'Almost none — it\'s automated', value: 'automated', leakageMultiplier: 0 },
-      { label: '2-5 hours/week', value: 'some', leakageMultiplier: 1100 },
-      { label: '5-15 hours/week', value: 'significant', leakageMultiplier: 3200 },
-      { label: '15+ hours/week', value: 'extreme', leakageMultiplier: 6500 },
+      { label: '2-5 hours/week', value: 'some', leakageMultiplier: 135 },
+      { label: '5-15 hours/week', value: 'significant', leakageMultiplier: 400 },
+      { label: '15+ hours/week', value: 'extreme', leakageMultiplier: 800 },
     ],
   },
   {
@@ -68,9 +68,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Speed-to-lead is the #1 predictor of conversion.',
     options: [
       { label: 'Within minutes (automated)', value: 'instant', leakageMultiplier: 0 },
-      { label: 'Within a few hours', value: 'hours', leakageMultiplier: 1800 },
-      { label: 'Next business day', value: 'nextday', leakageMultiplier: 4200 },
-      { label: 'It depends on who sees it first', value: 'random', leakageMultiplier: 7000 },
+      { label: 'Within a few hours', value: 'hours', leakageMultiplier: 225 },
+      { label: 'Next business day', value: 'nextday', leakageMultiplier: 525 },
+      { label: 'It depends on who sees it first', value: 'random', leakageMultiplier: 875 },
     ],
   },
   {
@@ -80,9 +80,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Revenue, pipeline, team capacity, project status — all in one place.',
     options: [
       { label: 'Yes — real-time and automated', value: 'realtime', leakageMultiplier: 0 },
-      { label: 'Partially — I check a few places', value: 'partial', leakageMultiplier: 900 },
-      { label: 'I rely on gut feel and spreadsheets', value: 'gut', leakageMultiplier: 2800 },
-      { label: 'I don\'t know my numbers until month-end', value: 'blind', leakageMultiplier: 5500 },
+      { label: 'Partially — I check a few places', value: 'partial', leakageMultiplier: 110 },
+      { label: 'I rely on gut feel and spreadsheets', value: 'gut', leakageMultiplier: 350 },
+      { label: 'I don\'t know my numbers until month-end', value: 'blind', leakageMultiplier: 685 },
     ],
   },
 
@@ -94,9 +94,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'This reveals how dependent your operations are on you personally.',
     options: [
       { label: 'Yes — systems and team handle it', value: 'independent', leakageMultiplier: 0 },
-      { label: 'Mostly — a few things would stall', value: 'mostly', leakageMultiplier: 1500 },
-      { label: 'It would slow down significantly', value: 'slow', leakageMultiplier: 3800 },
-      { label: 'It would basically stop', value: 'stop', leakageMultiplier: 8000 },
+      { label: 'Mostly — a few things would stall', value: 'mostly', leakageMultiplier: 185 },
+      { label: 'It would slow down significantly', value: 'slow', leakageMultiplier: 475 },
+      { label: 'It would basically stop', value: 'stop', leakageMultiplier: 1000 },
     ],
   },
   {
@@ -106,9 +106,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Missed follow-ups, forgotten deliverables, duplicate work...',
     options: [
       { label: 'Rarely — we have checklists and automations', value: 'rare', leakageMultiplier: 0 },
-      { label: 'Occasionally — maybe once a month', value: 'occasional', leakageMultiplier: 1200 },
-      { label: 'Frequently — weekly at least', value: 'frequent', leakageMultiplier: 3500 },
-      { label: 'Constantly — it\'s our biggest problem', value: 'constant', leakageMultiplier: 6800 },
+      { label: 'Occasionally — maybe once a month', value: 'occasional', leakageMultiplier: 150 },
+      { label: 'Frequently — weekly at least', value: 'frequent', leakageMultiplier: 435 },
+      { label: 'Constantly — it\'s our biggest problem', value: 'constant', leakageMultiplier: 850 },
     ],
   },
   {
@@ -118,9 +118,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Standardized processes vs. figuring it out each time.',
     options: [
       { label: 'Documented SOPs and automated sequences', value: 'documented', leakageMultiplier: 0 },
-      { label: 'We have templates but it\'s mostly manual', value: 'templates', leakageMultiplier: 1000 },
-      { label: 'Someone walks them through it each time', value: 'manual', leakageMultiplier: 2800 },
-      { label: 'It\'s different every time', value: 'adhoc', leakageMultiplier: 5200 },
+      { label: 'We have templates but it\'s mostly manual', value: 'templates', leakageMultiplier: 125 },
+      { label: 'Someone walks them through it each time', value: 'manual', leakageMultiplier: 350 },
+      { label: 'It\'s different every time', value: 'adhoc', leakageMultiplier: 650 },
     ],
   },
 
@@ -132,9 +132,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Admin, scheduling, inbox, formatting, basic customer questions...',
     options: [
       { label: 'Less than 2 hours', value: 'minimal', leakageMultiplier: 0 },
-      { label: '2-8 hours', value: 'some', leakageMultiplier: 2000 },
-      { label: '8-20 hours', value: 'significant', leakageMultiplier: 5500 },
-      { label: '20+ hours — I\'m the bottleneck', value: 'bottleneck', leakageMultiplier: 10000 },
+      { label: '2-8 hours', value: 'some', leakageMultiplier: 250 },
+      { label: '8-20 hours', value: 'significant', leakageMultiplier: 685 },
+      { label: '20+ hours — I\'m the bottleneck', value: 'bottleneck', leakageMultiplier: 1250 },
     ],
   },
   {
@@ -144,9 +144,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Clear roles, KPIs, and decision-making authority.',
     options: [
       { label: 'Yes — they\'re self-directed', value: 'selfdirected', leakageMultiplier: 0 },
-      { label: 'Mostly — occasional questions', value: 'mostly', leakageMultiplier: 1200 },
-      { label: 'They need daily direction', value: 'daily', leakageMultiplier: 3500 },
-      { label: 'I\'m a one-person show', value: 'solo', leakageMultiplier: 6000 },
+      { label: 'Mostly — occasional questions', value: 'mostly', leakageMultiplier: 150 },
+      { label: 'They need daily direction', value: 'daily', leakageMultiplier: 435 },
+      { label: 'I\'m a one-person show', value: 'solo', leakageMultiplier: 750 },
     ],
   },
   {
@@ -156,9 +156,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Rework is one of the most expensive hidden costs.',
     options: [
       { label: 'Almost never — quality is consistent', value: 'never', leakageMultiplier: 0 },
-      { label: 'Sometimes — minor corrections', value: 'sometimes', leakageMultiplier: 1500 },
-      { label: 'Often — it\'s faster to do it myself', value: 'often', leakageMultiplier: 4200 },
-      { label: 'Constantly — I can\'t trust the output', value: 'constantly', leakageMultiplier: 7500 },
+      { label: 'Sometimes — minor corrections', value: 'sometimes', leakageMultiplier: 185 },
+      { label: 'Often — it\'s faster to do it myself', value: 'often', leakageMultiplier: 525 },
+      { label: 'Constantly — I can\'t trust the output', value: 'constantly', leakageMultiplier: 935 },
     ],
   },
   {
@@ -168,9 +168,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'ChatGPT, automations, AI-powered workflows, etc.',
     options: [
       { label: 'Yes — integrated into our core workflows', value: 'integrated', leakageMultiplier: 0 },
-      { label: 'Experimenting — using it for some tasks', value: 'experimenting', leakageMultiplier: 1800 },
-      { label: 'Aware of it but haven\'t started', value: 'aware', leakageMultiplier: 4000 },
-      { label: 'Not at all — I don\'t know where to start', value: 'none', leakageMultiplier: 7500 },
+      { label: 'Experimenting — using it for some tasks', value: 'experimenting', leakageMultiplier: 225 },
+      { label: 'Aware of it but haven\'t started', value: 'aware', leakageMultiplier: 500 },
+      { label: 'Not at all — I don\'t know where to start', value: 'none', leakageMultiplier: 935 },
     ],
   },
 
@@ -182,9 +182,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Predictability is the foundation of growth.',
     options: [
       { label: 'Very confident — data-driven forecast', value: 'confident', leakageMultiplier: 0 },
-      { label: 'Somewhat — I have a rough idea', value: 'rough', leakageMultiplier: 1500 },
-      { label: 'Not very — it fluctuates unpredictably', value: 'unpredictable', leakageMultiplier: 4000 },
-      { label: 'I have no idea what next month looks like', value: 'blind', leakageMultiplier: 8000 },
+      { label: 'Somewhat — I have a rough idea', value: 'rough', leakageMultiplier: 185 },
+      { label: 'Not very — it fluctuates unpredictably', value: 'unpredictable', leakageMultiplier: 500 },
+      { label: 'I have no idea what next month looks like', value: 'blind', leakageMultiplier: 1000 },
     ],
   },
   {
@@ -194,9 +194,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Upsells, cross-sells, renewals, referrals you\'re not capturing.',
     options: [
       { label: 'We have systems to capture expansion revenue', value: 'capturing', leakageMultiplier: 0 },
-      { label: 'We do some follow-up but it\'s inconsistent', value: 'inconsistent', leakageMultiplier: 2500 },
-      { label: 'We rarely follow up after the initial sale', value: 'rarely', leakageMultiplier: 5500 },
-      { label: 'We don\'t have any post-sale process', value: 'none', leakageMultiplier: 9000 },
+      { label: 'We do some follow-up but it\'s inconsistent', value: 'inconsistent', leakageMultiplier: 310 },
+      { label: 'We rarely follow up after the initial sale', value: 'rarely', leakageMultiplier: 685 },
+      { label: 'We don\'t have any post-sale process', value: 'none', leakageMultiplier: 1125 },
     ],
   },
   {
@@ -206,9 +206,9 @@ export const leakageQuestions: LeakageQuestion[] = [
     subtext: 'Be honest — this shapes your recommendation.',
     options: [
       { label: 'Nothing — I have a clear roadmap', value: 'clear', leakageMultiplier: 0 },
-      { label: 'I need better systems to handle scale', value: 'systems', leakageMultiplier: 2000 },
-      { label: 'I\'m too busy working IN the business', value: 'busy', leakageMultiplier: 5000 },
-      { label: 'I don\'t know what I don\'t know', value: 'unknown', leakageMultiplier: 8500 },
+      { label: 'I need better systems to handle scale', value: 'systems', leakageMultiplier: 250 },
+      { label: 'I\'m too busy working IN the business', value: 'busy', leakageMultiplier: 625 },
+      { label: 'I don\'t know what I don\'t know', value: 'unknown', leakageMultiplier: 1060 },
     ],
   },
 ];
@@ -265,9 +265,9 @@ export function calculateLeakageResults(answers: Record<number, string>): Leakag
   }
 
   let severity: 'low' | 'moderate' | 'high' | 'critical';
-  if (totalMonthlyLeakage < 5000) severity = 'low';
-  else if (totalMonthlyLeakage < 15000) severity = 'moderate';
-  else if (totalMonthlyLeakage < 30000) severity = 'high';
+  if (totalMonthlyLeakage < 1500) severity = 'low';
+  else if (totalMonthlyLeakage < 3500) severity = 'moderate';
+  else if (totalMonthlyLeakage < 6000) severity = 'high';
   else severity = 'critical';
 
   return {
