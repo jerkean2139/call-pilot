@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, DollarSign, Clock, Zap } from 'lucide-react';
+import { TrendingUp, DollarSign, Clock } from 'lucide-react';
 
 interface GainsCalculatorProps {
   monthlySaved: number;
@@ -39,6 +39,15 @@ function useAnimatedNumber(target: number, duration: number = 600) {
   return current;
 }
 
+// Dynamic gain narration
+function getGainsNarration(total: number): string | null {
+  if (total >= 50000) return 'This is the difference between surviving and scaling.';
+  if (total >= 25000) return 'You could fund an entire growth initiative with this.';
+  if (total >= 10000) return "That's enough to hire your first AI-powered assistant.";
+  if (total >= 5000) return 'Real money — redirected into growth.';
+  return null;
+}
+
 export function GainsCalculator({
   monthlySaved,
   monthlyGained,
@@ -51,18 +60,39 @@ export function GainsCalculator({
   const animatedTotal = useAnimatedNumber(totalMonthly);
   const animatedAnnual = useAnimatedNumber(totalMonthly * 12);
   const animatedHours = useAnimatedNumber(Math.round(hoursSavedWeekly));
+  const [showPulse, setShowPulse] = useState(false);
+  const prevTotalRef = useRef(0);
+
+  const narration = getGainsNarration(totalMonthly);
+
+  // Pulse on threshold crossing
+  useEffect(() => {
+    const thresholds = [5000, 10000, 25000, 50000];
+    const prev = prevTotalRef.current;
+    const crossed = thresholds.some(t => prev < t && totalMonthly >= t);
+    if (crossed) {
+      setShowPulse(true);
+      setTimeout(() => setShowPulse(false), 800);
+    }
+    prevTotalRef.current = totalMonthly;
+  }, [totalMonthly]);
 
   return (
     <AnimatePresence>
       {isVisible && (
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            scale: showPulse ? 1.03 : 1,
+            boxShadow: showPulse ? '0 0 20px rgba(16, 185, 129, 0.4)' : '0 0 0px rgba(0,0,0,0)',
+          }}
           exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
           className="rounded-xl overflow-hidden bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-200"
         >
           <div className="p-5">
-            {/* Header */}
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="w-4 h-4 text-emerald-600" />
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
@@ -70,7 +100,6 @@ export function GainsCalculator({
               </span>
             </div>
 
-            {/* Total monthly impact */}
             <div className="flex items-baseline gap-1 mb-1">
               <DollarSign className="w-6 h-6 text-emerald-600" />
               <span className="text-3xl font-montserrat font-bold tabular-nums text-emerald-600">
@@ -79,16 +108,28 @@ export function GainsCalculator({
               <span className="text-sm text-gray-500">/mo</span>
             </div>
 
-            {/* Annual */}
-            <div className="flex items-baseline gap-1 mb-4">
+            <div className="flex items-baseline gap-1 mb-3">
               <span className="text-sm text-gray-500 ml-7">
                 ${animatedAnnual.toLocaleString()}/year
               </span>
             </div>
 
-            {/* Breakdown: Saved vs Earned */}
+            {/* Dynamic narration */}
+            <AnimatePresence mode="wait">
+              {narration && (
+                <motion.p
+                  key={narration}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-xs italic text-emerald-700 mb-3 leading-relaxed"
+                >
+                  "{narration}"
+                </motion.p>
+              )}
+            </AnimatePresence>
+
             <div className="space-y-2 mb-3">
-              {/* Cost saved */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -98,7 +139,6 @@ export function GainsCalculator({
                   ${animatedSaved.toLocaleString()}/mo
                 </span>
               </div>
-              {/* Revenue gained */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -110,7 +150,6 @@ export function GainsCalculator({
               </div>
             </div>
 
-            {/* Hours badge */}
             {hoursSavedWeekly > 0 && (
               <motion.div
                 initial={{ opacity: 0 }}

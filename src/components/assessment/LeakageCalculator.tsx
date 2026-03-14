@@ -20,7 +20,6 @@ function useAnimatedNumber(target: number, duration: number = 600) {
     const animate = (now: number) => {
       const elapsed = now - startTimeRef.current;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       const value = startRef.current + (target - startRef.current) * eased;
       setCurrent(Math.round(value));
@@ -38,9 +37,36 @@ function useAnimatedNumber(target: number, duration: number = 600) {
   return current;
 }
 
+// Dynamic pain narration based on leakage thresholds
+function getLeakageNarration(amount: number): string | null {
+  if (amount >= 50000) return "You're funding a competitor's growth with your waste.";
+  if (amount >= 35000) return 'Most businesses this leaky don\'t survive 3 years.';
+  if (amount >= 20000) return 'That\'s a luxury car payment — every single month.';
+  if (amount >= 10000) return 'You\'re burning a full-time salary every month.';
+  if (amount >= 5000) return 'That\'s a contractor you could hire instead.';
+  if (amount >= 2000) return 'Small leaks add up fast.';
+  return null;
+}
+
 export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculatorProps) {
   const animatedMonthly = useAnimatedNumber(monthlyLeakage);
   const animatedAnnual = useAnimatedNumber(monthlyLeakage * 12);
+  const [showPulse, setShowPulse] = useState(false);
+  const prevLeakageRef = useRef(0);
+
+  // Pulse animation when crossing a threshold
+  useEffect(() => {
+    const thresholds = [5000, 10000, 20000, 35000, 50000];
+    const prev = prevLeakageRef.current;
+    const crossed = thresholds.some(t => prev < t && monthlyLeakage >= t);
+    if (crossed) {
+      setShowPulse(true);
+      setTimeout(() => setShowPulse(false), 800);
+    }
+    prevLeakageRef.current = monthlyLeakage;
+  }, [monthlyLeakage]);
+
+  const narration = getLeakageNarration(monthlyLeakage);
 
   const getSeverityColor = () => {
     if (monthlyLeakage < 5000) return 'text-green-500';
@@ -68,8 +94,14 @@ export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculat
       {isVisible && (
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            scale: showPulse ? 1.03 : 1,
+            boxShadow: showPulse ? '0 0 20px rgba(239, 68, 68, 0.4)' : '0 0 0px rgba(0,0,0,0)',
+          }}
           exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.3 }}
           className={`rounded-xl overflow-hidden bg-gradient-to-br ${getSeverityBg()} border border-gray-200`}
         >
           <div className="p-5">
@@ -80,7 +112,6 @@ export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculat
               </span>
             </div>
 
-            {/* Monthly number */}
             <div className="flex items-baseline gap-1 mb-1">
               <DollarSign className={`w-6 h-6 ${getSeverityColor()}`} />
               <motion.span
@@ -92,14 +123,27 @@ export function LeakageCalculator({ monthlyLeakage, isVisible }: LeakageCalculat
               <span className="text-sm text-gray-500">/mo</span>
             </div>
 
-            {/* Annual projection */}
             <div className="flex items-baseline gap-1 mb-3">
               <span className="text-sm text-gray-500 ml-7">
                 ${animatedAnnual.toLocaleString()}/year
               </span>
             </div>
 
-            {/* Severity badge */}
+            {/* Dynamic narration */}
+            <AnimatePresence mode="wait">
+              {narration && (
+                <motion.p
+                  key={narration}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-xs italic text-gray-600 mb-3 leading-relaxed"
+                >
+                  "{narration}"
+                </motion.p>
+              )}
+            </AnimatePresence>
+
             {monthlyLeakage > 0 && (
               <motion.div
                 initial={{ opacity: 0 }}
