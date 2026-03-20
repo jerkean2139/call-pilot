@@ -95,7 +95,7 @@ export default function NewJournalEntryPage() {
   };
 
   const handleSave = async () => {
-    if (!activeBaby || !title.trim()) return;
+    if (!activeBaby || !title.trim() || saving) return;
     setSaving(true);
     setError(null);
 
@@ -117,24 +117,22 @@ export default function NewJournalEntryPage() {
       if (!res.ok) throw new Error('Failed to save entry');
       const entry = await res.json();
 
-      // Upload media files
+      // Upload media files (best-effort — entry is already saved)
       if (mediaPreviews.length > 0) {
-        for (const preview of mediaPreviews) {
+        const uploads = mediaPreviews.map((preview) => {
           const formData = new FormData();
           formData.append('file', preview.file);
           formData.append('entryId', entry.id);
           formData.append('babyId', activeBaby.id);
-
-          await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-        }
+          return fetch('/api/upload', { method: 'POST', body: formData });
+        });
+        await Promise.allSettled(uploads);
       }
 
       router.push('/app/journal');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
       setSaving(false);
     }
   };
