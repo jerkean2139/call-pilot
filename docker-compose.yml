@@ -1,51 +1,22 @@
+version: '3.8'
+
 services:
-  db:
+  postgres:
     image: postgres:16-alpine
-    container_name: coretrack-db
-    restart: always
+    container_name: living-legacy-db
     environment:
-      POSTGRES_USER: coretrack
-      POSTGRES_PASSWORD: coretrack123
-      POSTGRES_DB: coretrack
+      POSTGRES_USER: livinglegacy
+      POSTGRES_PASSWORD: livinglegacy
+      POSTGRES_DB: livinglegacy
     ports:
-      - "5434:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./supabase/migrations:/docker-entrypoint-initdb.d
-      - ./db/init.sql:/docker-entrypoint-initdb.d/99-leakage.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U coretrack"]
-      interval: 10s
+      test: ['CMD-SHELL', 'pg_isready -U livinglegacy']
+      interval: 5s
       timeout: 5s
       retries: 5
 
-  app:
-    build: .
-    container_name: coretrack-app
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      PORT: 3000
-      DATABASE_URL: postgresql://coretrack:coretrack123@db:5432/coretrack
-    depends_on:
-      db:
-        condition: service_healthy
-
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: coretrack-pgadmin
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@coretrack.com
-      PGADMIN_DEFAULT_PASSWORD: admin123
-    ports:
-      - "5050:80"
-    depends_on:
-      - db
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-
 volumes:
   postgres_data:
-  pgadmin_data:
