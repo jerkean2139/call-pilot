@@ -1,44 +1,38 @@
-# CoreTrack Assessment Tool
+# Living Legacy - Baby Journal
 
-CoreTrack is a comprehensive assessment platform that helps organizations identify and develop talent through a trait-based analysis system.
+A beautiful, mobile-first Progressive Web App for capturing and cherishing every moment of your baby's journey.
 
 ## Features
 
-- **Five Archetype Assessment System**: Analyze users across five key traits - Critical Thinking, Independence, Passion, Role Clarity, and Collaboration
-- **Detailed Results**: Provides users with their primary and secondary archetypes, along with strengths and growth opportunities
-- **Client Onboarding**: Multi-step process for organizations to sign up and configure their assessment strategy
-- **Reports Dashboard**: Visualize assessment data for teams and individuals
-- **User Guide**: Comprehensive documentation on how to interpret and use assessment results
+- **Journal** — Record daily moments, milestones, firsts, and memories with photos
+- **Milestone Tracker** — Track 50+ developmental milestones across motor, cognitive, social, language, feeding, and sleep categories
+- **Growth Charts** — Track weight, height, and head circumference with interactive charts
+- **Timeline** — View your baby's complete story in chronological order
+- **Offline-First** — All data stored locally on your device using IndexedDB
+- **PWA** — Install on your home screen for a native app experience
+- **Data Backup** — Export and import your data as JSON
 
-## Archetypes
+## Getting Started
 
-1. **The Analyst** (Critical Thinking)
-   - Strengths: Problem-solving, Data analysis, Logical thinking
-   - Growth Areas: Balancing analysis with emotional intelligence
+```bash
+npm install
+npm run dev
+```
 
-2. **The Pathfinder** (Independence)
-   - Strengths: Self-reliance, Initiative, Adaptability
-   - Growth Areas: Keeping stakeholders informed and inviting input
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-3. **The Catalyst** (Passion)
-   - Strengths: Motivation, Inspiration, Drive
-   - Growth Areas: Balancing enthusiasm with pragmatic planning
+## Build
 
-4. **The Specialist** (Role Clarity)
-   - Strengths: Focus, Reliability, Technical expertise
-   - Growth Areas: Exploring adjacent domains to broaden expertise
-
-5. **The Connector** (Collaboration)
-   - Strengths: Team-building, Communication, Empathy
-   - Growth Areas: Asserting individual viewpoints when necessary
+```bash
+npm run build
+npm run preview
+```
 
 ## Tech Stack
 
-- React with TypeScript
-- Tailwind CSS for styling
-- React Router for navigation
-- Vite for build tooling
-
-## Deployment
-
-CoreTrack is deployed on Netlify at [splendorous-panda-b3fb4d.netlify.app](https://splendorous-panda-b3fb4d.netlify.app/)
+- React 18 + TypeScript + Vite
+- Tailwind CSS
+- Framer Motion
+- Recharts
+- Lucide React
+- IndexedDB (offline storage)

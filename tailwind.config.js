@@ -4,14 +4,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#D50000',
-        secondary: '#000000',
-        accent: '#FFFFFF',
-        highlight: '#FF4444',
+        warm: {
+          50: '#FFF8F0',
+          100: '#FFEFDB',
+          200: '#FFE0BD',
+        },
       },
       fontFamily: {
-        montserrat: ['Montserrat', 'sans-serif'],
-        'open-sans': ['Open Sans', 'sans-serif'],
+        heading: ['Montserrat', 'sans-serif'],
+        body: ['Open Sans', 'sans-serif'],
       },
     },
   },

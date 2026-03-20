@@ -1,0 +1,19 @@
+{
+  "name": "Living Legacy - Baby Journal",
+  "short_name": "Living Legacy",
+  "description": "Capture and cherish every moment of your baby's journey",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F0",
+  "theme_color": "#F43F5E",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["lifestyle", "health"]
+}

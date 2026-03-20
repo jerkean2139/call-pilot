@@ -1,49 +1,61 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { Header } from './components/layout/header';
-import { AdminPortal } from './pages/AdminPortal';
-import { AssessmentResults } from './pages/AssessmentResults';
-import { AssessmentPage } from './pages/AssessmentPage';
-import { GuidePage } from './pages/GuidePage';
-import { ReportsPage } from './pages/ReportsPage';
-import { OnboardingPage } from './pages/OnboardingPage';
-import { LeakageAssessment } from './pages/LeakageAssessment';
-import { LeakageResults } from './pages/LeakageResults';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BabyProvider, useBabyContext } from './context/BabyContext';
+import Layout from './components/Layout';
+import Onboarding from './pages/Onboarding';
+import Dashboard from './pages/Dashboard';
+import Journal from './pages/Journal';
+import NewEntry from './pages/NewEntry';
+import JournalEntry from './pages/JournalEntry';
+import Milestones from './pages/Milestones';
+import Growth from './pages/Growth';
+import Timeline from './pages/Timeline';
+import Settings from './pages/Settings';
 
-const queryClient = new QueryClient();
+function AppRoutes() {
+  const { baby, loading } = useBabyContext();
 
-function HeaderLayout() {
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-warm-50">
+        <div className="text-center">
+          <div className="mx-auto mb-3 h-10 w-10 animate-pulse rounded-full bg-rose-200" />
+          <p className="text-sm text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!baby) {
+    return (
+      <Routes>
+        <Route path="*" element={<Onboarding />} />
+      </Routes>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
-      <Outlet />
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/journal/new" element={<NewEntry />} />
+        <Route path="/journal/:id" element={<JournalEntry />} />
+        <Route path="/milestones" element={<Milestones />} />
+        <Route path="/growth" element={<Growth />} />
+        <Route path="/timeline" element={<Timeline />} />
+        <Route path="/settings" element={<Settings />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
-function App() {
+export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          {/* Leakage routes — standalone full-screen layout, no header */}
-          <Route path="/" element={<LeakageAssessment />} />
-          <Route path="/leakage" element={<LeakageAssessment />} />
-          <Route path="/leakage/results" element={<LeakageResults />} />
-
-          {/* Other routes — with header */}
-          <Route element={<HeaderLayout />}>
-            <Route path="/assessment" element={<AssessmentPage />} />
-            <Route path="/results" element={<AssessmentResults />} />
-            <Route path="/guide" element={<GuidePage />} />
-            <Route path="/admin" element={<AdminPortal />} />
-            <Route path="/reports" element={<ReportsPage />} />
-            <Route path="/onboarding" element={<OnboardingPage />} />
-          </Route>
-        </Routes>
-      </Router>
-    </QueryClientProvider>
+    <BrowserRouter>
+      <BabyProvider>
+        <AppRoutes />
+      </BabyProvider>
+    </BrowserRouter>
   );
 }
-
-export default App;
