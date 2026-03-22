@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, X, Scale, Ruler, CircleDot, Trash2 } from 'lucide-react';
+import { Plus, X, Scale, Ruler, CircleDot, Trash2, Pencil } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
 import GrowthChart from '../components/GrowthChart';
 import { generateId, formatDate } from '../lib/utils';
+import type { GrowthRecord } from '../types';
 
 type MetricTab = 'weight' | 'height' | 'head';
 
@@ -11,6 +12,7 @@ export default function Growth() {
   const { baby, growthRecords, saveGrowthRecord, deleteGrowthRecord } = useBabyContext();
   const [activeTab, setActiveTab] = useState<MetricTab>('weight');
   const [showForm, setShowForm] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<GrowthRecord | null>(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [weightLbs, setWeightLbs] = useState('');
   const [weightOz, setWeightOz] = useState('');
@@ -18,6 +20,7 @@ export default function Growth() {
   const [headCirc, setHeadCirc] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
   if (!baby) return null;
 
@@ -35,12 +38,24 @@ export default function Growth() {
     setHeadCirc('');
     setNotes('');
     setShowForm(false);
+    setEditingRecord(null);
+  };
+
+  const startEdit = (record: GrowthRecord) => {
+    setEditingRecord(record);
+    setDate(record.date);
+    setWeightLbs(record.weightLbs?.toString() || '');
+    setWeightOz(record.weightOz?.toString() || '');
+    setHeightInches(record.heightInches?.toString() || '');
+    setHeadCirc(record.headCircumferenceInches?.toString() || '');
+    setNotes(record.notes || '');
+    setShowForm(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
     await saveGrowthRecord({
-      id: generateId(),
+      id: editingRecord?.id || generateId(),
       babyId: baby.id,
       date,
       weightLbs: weightLbs ? parseFloat(weightLbs) : undefined,
@@ -48,16 +63,15 @@ export default function Growth() {
       heightInches: heightInches ? parseFloat(heightInches) : undefined,
       headCircumferenceInches: headCirc ? parseFloat(headCirc) : undefined,
       notes: notes || undefined,
-      createdAt: new Date().toISOString(),
+      createdAt: editingRecord?.createdAt || new Date().toISOString(),
     });
     setSaving(false);
     resetForm();
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Delete this growth record?')) {
-      await deleteGrowthRecord(id);
-    }
+    await deleteGrowthRecord(id);
+    setShowDeleteConfirm(null);
   };
 
   return (
@@ -68,14 +82,17 @@ export default function Growth() {
           <p className="text-sm text-gray-400">{baby.name}'s growth tracker</p>
         </div>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            if (showForm) resetForm();
+            else setShowForm(true);
+          }}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-500 text-white shadow-md shadow-violet-200 transition-all hover:bg-violet-600 active:scale-90"
         >
           {showForm ? <X size={20} /> : <Plus size={20} />}
         </button>
       </div>
 
-      {/* Add Form */}
+      {/* Add/Edit Form */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -86,7 +103,7 @@ export default function Growth() {
           >
             <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
               <h3 className="mb-3 font-heading text-sm font-semibold text-gray-700">
-                Record Measurements
+                {editingRecord ? 'Edit Measurements' : 'Record Measurements'}
               </h3>
               <input
                 type="date"
@@ -155,7 +172,7 @@ export default function Growth() {
                 disabled={saving || (!weightLbs && !heightInches && !headCirc)}
                 className="w-full rounded-xl bg-violet-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-violet-600 disabled:opacity-40 active:scale-[0.98]"
               >
-                {saving ? 'Saving...' : 'Save Record'}
+                {saving ? 'Saving...' : editingRecord ? 'Update Record' : 'Save Record'}
               </button>
             </div>
           </motion.div>
@@ -182,7 +199,7 @@ export default function Growth() {
 
       {/* Chart */}
       <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-100">
-        <GrowthChart records={growthRecords} metric={activeTab} />
+        <GrowthChart records={growthRecords} metric={activeTab} gender={baby.gender} />
       </div>
 
       {/* Records list */}
@@ -216,11 +233,43 @@ export default function Growth() {
               )}
             </div>
             <button
-              onClick={() => handleDelete(record.id)}
-              className="shrink-0 rounded-full p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-400"
+              onClick={() => startEdit(record)}
+              className="shrink-0 rounded-full p-1.5 text-gray-300 transition-colors hover:bg-violet-50 hover:text-violet-400"
             >
-              <Trash2 size={14} />
+              <Pencil size={14} />
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowDeleteConfirm(record.id)}
+                className="shrink-0 rounded-full p-1.5 text-gray-300 transition-colors hover:bg-red-50 hover:text-red-400"
+              >
+                <Trash2 size={14} />
+              </button>
+              {/* Delete confirmation */}
+              <AnimatePresence>
+                {showDeleteConfirm === record.id && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className="absolute right-0 top-8 z-10 flex gap-1.5 rounded-xl bg-white p-2 shadow-lg ring-1 ring-gray-200"
+                  >
+                    <button
+                      onClick={() => handleDelete(record.id)}
+                      className="whitespace-nowrap rounded-lg bg-red-500 px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(null)}
+                      className="whitespace-nowrap rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         ))}
       </div>

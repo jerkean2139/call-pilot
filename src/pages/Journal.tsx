@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, BookOpen } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
 import JournalCard from '../components/JournalCard';
 import EmptyState from '../components/EmptyState';
-import { BookOpen } from 'lucide-react';
+import PullToRefresh from '../components/PullToRefresh';
 import type { JournalCategory } from '../types';
 
 const categories: { value: JournalCategory | 'all'; label: string }[] = [
@@ -23,7 +23,7 @@ const categories: { value: JournalCategory | 'all'; label: string }[] = [
 
 export default function Journal() {
   const navigate = useNavigate();
-  const { entries } = useBabyContext();
+  const { entries, refresh } = useBabyContext();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<JournalCategory | 'all'>('all');
 
@@ -37,6 +37,7 @@ export default function Journal() {
   });
 
   return (
+    <PullToRefresh onRefresh={refresh}>
     <div className="space-y-4 pb-4">
       <div className="flex items-center justify-between pt-2">
         <h1 className="font-heading text-2xl font-bold text-gray-800">Journal</h1>
@@ -100,5 +101,6 @@ export default function Journal() {
         />
       )}
     </div>
+    </PullToRefresh>
   );
 }

@@ -83,3 +83,12 @@ export interface TimelineEvent {
   photoUrl?: string;
   category?: string;
 }
+
+export type FrameType = 'aura' | 'skylight' | 'nixplay' | 'custom';
+
+export interface FrameSettings {
+  enabled: boolean;
+  frameType: FrameType;
+  frameEmail: string;
+  frameName: string;
+}

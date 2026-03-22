@@ -4,8 +4,11 @@ import { babyDB, journalDB, milestoneDB, growthDB } from '../lib/db';
 
 interface BabyContextValue {
   baby: Baby | null;
+  babies: Baby[];
   setBaby: (baby: Baby | null) => void;
   saveBaby: (baby: Baby) => Promise<void>;
+  switchBaby: (babyId: string) => Promise<void>;
+  deleteBabyProfile: (babyId: string) => Promise<void>;
   // Journal
   entries: JournalEntry[];
   saveEntry: (entry: JournalEntry) => Promise<void>;
@@ -27,36 +30,44 @@ const BabyContext = createContext<BabyContextValue | null>(null);
 
 export function BabyProvider({ children }: { children: ReactNode }) {
   const [baby, setBaby] = useState<Baby | null>(null);
+  const [babies, setBabies] = useState<Baby[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [growthRecords, setGrowthRecords] = useState<GrowthRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadBabyData = useCallback(async (currentBaby: Baby) => {
+    const [e, m, g] = await Promise.all([
+      journalDB.getByBaby(currentBaby.id),
+      milestoneDB.getByBaby(currentBaby.id),
+      growthDB.getByBaby(currentBaby.id),
+    ]);
+    setEntries(e.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    setMilestones(m.sort((a, b) => {
+      if (!a.achievedDate) return 1;
+      if (!b.achievedDate) return -1;
+      return new Date(b.achievedDate).getTime() - new Date(a.achievedDate).getTime();
+    }));
+    setGrowthRecords(g.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+  }, []);
+
   const loadData = useCallback(async () => {
     try {
-      const babies = await babyDB.getAll();
-      if (babies.length > 0) {
-        const currentBaby = babies[0];
-        setBaby(currentBaby);
-        const [e, m, g] = await Promise.all([
-          journalDB.getByBaby(currentBaby.id),
-          milestoneDB.getByBaby(currentBaby.id),
-          growthDB.getByBaby(currentBaby.id),
-        ]);
-        setEntries(e.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        setMilestones(m.sort((a, b) => {
-          if (!a.achievedDate) return 1;
-          if (!b.achievedDate) return -1;
-          return new Date(b.achievedDate).getTime() - new Date(a.achievedDate).getTime();
-        }));
-        setGrowthRecords(g.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+      const allBabies = await babyDB.getAll();
+      setBabies(allBabies);
+      if (allBabies.length > 0) {
+        // Check for stored active baby
+        const storedId = localStorage.getItem('living-legacy-active-baby');
+        const activeBaby = allBabies.find((b) => b.id === storedId) || allBabies[0];
+        setBaby(activeBaby);
+        await loadBabyData(activeBaby);
       }
     } catch (err) {
       console.error('Failed to load data:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadBabyData]);
 
   useEffect(() => {
     loadData();
@@ -65,11 +76,46 @@ export function BabyProvider({ children }: { children: ReactNode }) {
   const saveBaby = async (b: Baby) => {
     await babyDB.save(b);
     setBaby(b);
+    setBabies((prev) => {
+      const idx = prev.findIndex((p) => p.id === b.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = b;
+        return next;
+      }
+      return [...prev, b];
+    });
+    localStorage.setItem('living-legacy-active-baby', b.id);
+  };
+
+  const switchBaby = async (babyId: string) => {
+    const target = babies.find((b) => b.id === babyId);
+    if (target) {
+      setBaby(target);
+      localStorage.setItem('living-legacy-active-baby', babyId);
+      await loadBabyData(target);
+    }
+  };
+
+  const deleteBabyProfile = async (babyId: string) => {
+    await babyDB.delete(babyId);
+    setBabies((prev) => prev.filter((b) => b.id !== babyId));
+    if (baby?.id === babyId) {
+      const remaining = babies.filter((b) => b.id !== babyId);
+      if (remaining.length > 0) {
+        await switchBaby(remaining[0].id);
+      } else {
+        setBaby(null);
+        setEntries([]);
+        setMilestones([]);
+        setGrowthRecords([]);
+      }
+    }
   };
 
   const saveEntry = async (entry: JournalEntry) => {
     await journalDB.save(entry);
-    await loadData();
+    if (baby) await loadBabyData(baby);
   };
 
   const deleteEntry = async (id: string) => {
@@ -79,7 +125,7 @@ export function BabyProvider({ children }: { children: ReactNode }) {
 
   const saveMilestone = async (milestone: Milestone) => {
     await milestoneDB.save(milestone);
-    await loadData();
+    if (baby) await loadBabyData(baby);
   };
 
   const deleteMilestone = async (id: string) => {
@@ -89,7 +135,7 @@ export function BabyProvider({ children }: { children: ReactNode }) {
 
   const saveGrowthRecord = async (record: GrowthRecord) => {
     await growthDB.save(record);
-    await loadData();
+    if (baby) await loadBabyData(baby);
   };
 
   const deleteGrowthRecord = async (id: string) => {
@@ -101,8 +147,11 @@ export function BabyProvider({ children }: { children: ReactNode }) {
     <BabyContext.Provider
       value={{
         baby,
+        babies,
         setBaby,
         saveBaby,
+        switchBaby,
+        deleteBabyProfile,
         entries,
         saveEntry,
         deleteEntry,

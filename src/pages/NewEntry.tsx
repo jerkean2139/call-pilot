@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Camera, X, Save } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
@@ -29,7 +29,9 @@ const moods = [
 
 export default function NewEntry() {
   const navigate = useNavigate();
-  const { baby, saveEntry } = useBabyContext();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
+  const { baby, entries, saveEntry } = useBabyContext();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<JournalCategory>('daily');
@@ -37,6 +39,19 @@ export default function NewEntry() {
   const [mood, setMood] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  const editingEntry = editId ? entries.find((e) => e.id === editId) : null;
+
+  useEffect(() => {
+    if (editingEntry) {
+      setTitle(editingEntry.title);
+      setContent(editingEntry.content);
+      setCategory(editingEntry.category);
+      setDate(editingEntry.date);
+      setMood(editingEntry.mood || '');
+      setPhotos(editingEntry.photos);
+    }
+  }, [editingEntry]);
 
   const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -59,19 +74,19 @@ export default function NewEntry() {
     setSaving(true);
     const now = new Date().toISOString();
     await saveEntry({
-      id: generateId(),
+      id: editingEntry?.id || generateId(),
       babyId: baby.id,
       title,
       content,
       category,
       date,
       photos,
-      mood: mood as any || undefined,
-      createdAt: now,
+      mood: (mood as any) || undefined,
+      createdAt: editingEntry?.createdAt || now,
       updatedAt: now,
     });
     setSaving(false);
-    navigate('/journal');
+    navigate(editingEntry ? `/journal/${editingEntry.id}` : '/journal');
   };
 
   return (
@@ -89,7 +104,7 @@ export default function NewEntry() {
           <ArrowLeft size={18} className="text-gray-600" />
         </button>
         <h1 className="flex-1 font-heading text-xl font-bold text-gray-800">
-          New Entry
+          {editingEntry ? 'Edit Entry' : 'New Entry'}
         </h1>
         <button
           onClick={handleSave}
@@ -116,7 +131,7 @@ export default function NewEntry() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="What happened today?"
-        autoFocus
+        autoFocus={!editingEntry}
         className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-lg font-medium text-gray-800 outline-none transition-all focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
       />
 

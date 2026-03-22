@@ -1,19 +1,38 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Save, Trash2, Download, Upload } from 'lucide-react';
+import { ArrowLeft, Camera, Save, Trash2, Download, Upload, Monitor, Moon, Sun, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyContext } from '../context/BabyContext';
 import BabyAvatar from '../components/BabyAvatar';
 import { fileToBase64 } from '../lib/utils';
+import type { FrameType } from '../types';
+import { getFrameSettings, saveFrameSettings, getFrameEmailDomain, getFrameTypeName } from '../lib/frameSettings';
+import { useTheme } from '../context/ThemeContext';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { baby, saveBaby, entries, milestones, growthRecords } = useBabyContext();
+  const { theme, toggleTheme } = useTheme();
+  const { baby, babies, saveBaby, switchBaby, entries, milestones, growthRecords } = useBabyContext();
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
   const [gender, setGender] = useState<'boy' | 'girl' | 'other' | ''>('');
   const [photoUrl, setPhotoUrl] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Frame settings
+  const [frameEnabled, setFrameEnabled] = useState(false);
+  const [frameType, setFrameType] = useState<FrameType>('aura');
+  const [frameEmail, setFrameEmail] = useState('');
+  const [frameName, setFrameName] = useState('');
+  const [frameSaved, setFrameSaved] = useState(false);
+
+  useEffect(() => {
+    const fs = getFrameSettings();
+    setFrameEnabled(fs.enabled);
+    setFrameType(fs.frameType);
+    setFrameEmail(fs.frameEmail);
+    setFrameName(fs.frameName);
+  }, []);
 
   useEffect(() => {
     if (baby) {
@@ -111,8 +130,59 @@ export default function Settings() {
         <h1 className="font-heading text-xl font-bold text-gray-800">Settings</h1>
       </div>
 
+      {/* Baby Switcher */}
+      {babies.length > 1 && (
+        <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
+          <h2 className="mb-3 font-heading text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Switch Baby
+          </h2>
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {babies.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => switchBaby(b.id)}
+                className={`flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all ${
+                  baby?.id === b.id
+                    ? 'bg-rose-500 text-white shadow-sm'
+                    : 'bg-gray-50 text-gray-600 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                }`}
+              >
+                {b.photoUrl ? (
+                  <img src={b.photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-[10px] font-bold text-rose-500">
+                    {b.name[0]}
+                  </div>
+                )}
+                {b.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add Another Baby */}
+      <button
+        onClick={async () => {
+          const name = prompt('Baby\'s name:');
+          if (!name) return;
+          const dob = prompt('Date of birth (YYYY-MM-DD):');
+          if (!dob) return;
+          const { generateId } = await import('../lib/utils');
+          await saveBaby({
+            id: generateId(),
+            name,
+            dateOfBirth: dob,
+            createdAt: new Date().toISOString(),
+          });
+        }}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-rose-200 py-3 text-sm font-medium text-rose-400 transition-all hover:border-rose-300 hover:text-rose-500 dark:border-rose-800 dark:text-rose-500"
+      >
+        + Add Another Baby
+      </button>
+
       {/* Baby Profile */}
-      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
         <h2 className="mb-4 font-heading text-sm font-semibold text-gray-700">
           Baby Profile
         </h2>
@@ -182,6 +252,125 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Digital Frame */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Monitor size={16} className="text-violet-500" />
+            <h2 className="font-heading text-sm font-semibold text-gray-700">
+              Digital Photo Frame
+            </h2>
+          </div>
+          <button
+            onClick={() => {
+              const next = !frameEnabled;
+              setFrameEnabled(next);
+              saveFrameSettings({
+                enabled: next,
+                frameType,
+                frameEmail,
+                frameName,
+              });
+            }}
+            className={`relative h-6 w-11 rounded-full transition-colors ${
+              frameEnabled ? 'bg-violet-500' : 'bg-gray-200'
+            }`}
+          >
+            <div
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                frameEnabled ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+
+        {frameEnabled && (
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">
+                Frame Type
+              </label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['aura', 'skylight', 'nixplay', 'custom'] as const).map(
+                  (ft) => (
+                    <button
+                      key={ft}
+                      onClick={() => {
+                        setFrameType(ft);
+                        if (ft !== 'custom') {
+                          setFrameEmail('');
+                        }
+                      }}
+                      className={`rounded-lg py-2 text-xs font-semibold capitalize transition-all ${
+                        frameType === ft
+                          ? 'bg-violet-500 text-white'
+                          : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200'
+                      }`}
+                    >
+                      {getFrameTypeName(ft)}
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">
+                Frame Email Address
+              </label>
+              <input
+                type="email"
+                value={frameEmail}
+                onChange={(e) => setFrameEmail(e.target.value)}
+                placeholder={
+                  frameType !== 'custom'
+                    ? `your-code${getFrameEmailDomain(frameType)}`
+                    : 'frame@example.com'
+                }
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-300"
+              />
+              {frameType !== 'custom' && (
+                <p className="mt-1 text-[10px] text-gray-400">
+                  Find this in your {getFrameTypeName(frameType)} app under
+                  frame settings
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-gray-400">
+                Frame Name (optional)
+              </label>
+              <input
+                type="text"
+                value={frameName}
+                onChange={(e) => setFrameName(e.target.value)}
+                placeholder="e.g. Living Room Frame"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-violet-300"
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                saveFrameSettings({
+                  enabled: frameEnabled,
+                  frameType,
+                  frameEmail,
+                  frameName,
+                });
+                setFrameSaved(true);
+                setTimeout(() => setFrameSaved(false), 2000);
+              }}
+              disabled={!frameEmail}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 py-2.5 text-sm font-semibold text-white transition-all hover:bg-violet-600 disabled:opacity-40"
+            >
+              <Save size={14} />
+              {frameSaved ? 'Saved!' : 'Save Frame Settings'}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Data Management */}
       <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100">
         <h2 className="mb-4 font-heading text-sm font-semibold text-gray-700">
@@ -208,8 +397,76 @@ export default function Settings() {
         </div>
       </div>
 
+      {/* Appearance */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {theme === 'dark' ? (
+              <Moon size={16} className="text-violet-500" />
+            ) : (
+              <Sun size={16} className="text-amber-500" />
+            )}
+            <h2 className="font-heading text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Dark Mode
+            </h2>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className={`relative h-6 w-11 rounded-full transition-colors ${
+              theme === 'dark' ? 'bg-violet-500' : 'bg-gray-200'
+            }`}
+          >
+            <div
+              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'
+              }`}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Bell size={16} className="text-rose-500" />
+            <div>
+              <h2 className="font-heading text-sm font-semibold text-gray-700 dark:text-gray-200">
+                Journal Reminders
+              </h2>
+              <p className="text-[10px] text-gray-400">Get reminded to journal</p>
+            </div>
+          </div>
+          <button
+            onClick={async () => {
+              if (!('Notification' in window)) {
+                alert('Notifications are not supported in your browser');
+                return;
+              }
+              const permission = await Notification.requestPermission();
+              if (permission === 'granted') {
+                // Schedule a daily reminder
+                if ('serviceWorker' in navigator) {
+                  const reg = await navigator.serviceWorker.ready;
+                  // Show a test notification
+                  reg.showNotification('Living Legacy', {
+                    body: `Don't forget to capture ${baby.name}'s special moments today!`,
+                    icon: '/icons/icon.svg',
+                    tag: 'reminder',
+                  });
+                }
+                alert('Reminders enabled! You\'ll get daily reminders to journal.');
+              }
+            }}
+            className="rounded-lg bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-500 transition-all hover:bg-rose-100 dark:bg-rose-900/20"
+          >
+            Enable
+          </button>
+        </div>
+      </div>
+
       {/* Stats */}
-      <div className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-400">
+      <div className="rounded-2xl bg-gray-50 p-4 text-center text-xs text-gray-400 dark:bg-gray-800 dark:text-gray-500">
         <p>
           {entries.length} journal entries &middot; {milestones.filter((m) => m.achievedDate).length} milestones &middot; {growthRecords.length} growth records
         </p>

@@ -1,12 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, BookOpen, Star, TrendingUp, Clock } from 'lucide-react';
+import { Home, BookOpen, Star, Image, Clock } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const navItems = [
   { to: '/', icon: Home, label: 'Home' },
   { to: '/journal', icon: BookOpen, label: 'Journal' },
   { to: '/milestones', icon: Star, label: 'Milestones' },
-  { to: '/growth', icon: TrendingUp, label: 'Growth' },
+  { to: '/gallery', icon: Image, label: 'Gallery' },
   { to: '/timeline', icon: Clock, label: 'Timeline' },
 ];
 

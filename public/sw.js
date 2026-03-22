@@ -1,4 +1,4 @@
-const CACHE_NAME = 'living-legacy-v1';
+const CACHE_NAME = 'living-legacy-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -52,4 +52,42 @@ self.addEventListener('fetch', (event) => {
       })
     );
   }
+});
+
+// Listen for skip waiting message from UpdatePrompt
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Periodic notification reminder (if permission granted)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'journal-reminder') {
+    event.waitUntil(
+      self.registration.showNotification('Living Legacy', {
+        body: "Don't forget to capture today's special moments!",
+        icon: '/icons/icon.svg',
+        tag: 'reminder',
+        actions: [
+          { action: 'open', title: 'Open Journal' },
+        ],
+      })
+    );
+  }
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then((clients) => {
+      if (clients.length > 0) {
+        clients[0].focus();
+        clients[0].navigate('/journal/new');
+      } else {
+        self.clients.openWindow('/journal/new');
+      }
+    })
+  );
 });
