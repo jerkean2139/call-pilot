@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Save, Trash2, Download, Upload, Monitor, Moon, Sun, Bell } from 'lucide-react';
+import { ArrowLeft, Camera, Save, Download, Upload, Monitor, Moon, Sun, Bell, Users, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyContext } from '../context/BabyContext';
+import { useAuth } from '../context/AuthContext';
 import BabyAvatar from '../components/BabyAvatar';
 import { fileToBase64 } from '../lib/utils';
 import type { FrameType } from '../types';
@@ -12,6 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const { baby, babies, saveBaby, switchBaby, entries, milestones, growthRecords } = useBabyContext();
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
@@ -463,6 +465,48 @@ export default function Settings() {
             Enable
           </button>
         </div>
+      </div>
+
+      {/* Family Portal */}
+      <button
+        onClick={() => navigate('/family')}
+        className="flex w-full items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 transition-all hover:bg-gray-50 dark:bg-gray-800 dark:ring-gray-700"
+      >
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30">
+          <Users size={18} className="text-violet-500" />
+        </div>
+        <div className="flex-1 text-left">
+          <h2 className="font-heading text-sm font-semibold text-gray-700 dark:text-gray-200">
+            Family Portal
+          </h2>
+          <p className="text-[10px] text-gray-400">Invite family & friends to view entries</p>
+        </div>
+        <ArrowLeft size={16} className="rotate-180 text-gray-300" />
+      </button>
+
+      {/* Account */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
+        <h2 className="mb-3 font-heading text-sm font-semibold text-gray-700 dark:text-gray-200">
+          Account
+        </h2>
+        {user && (
+          <div className="mb-3 rounded-xl bg-gray-50 p-3 dark:bg-gray-700">
+            <p className="text-sm font-medium text-gray-800 dark:text-white">{user.name}</p>
+            <p className="text-xs text-gray-500">{user.phone}</p>
+          </div>
+        )}
+        <button
+          onClick={() => {
+            if (confirm('Are you sure you want to sign out?')) {
+              logout();
+              navigate('/login');
+            }
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-2.5 text-sm font-semibold text-red-500 transition-all hover:bg-red-100 dark:bg-red-900/20"
+        >
+          <LogOut size={14} />
+          Sign Out
+        </button>
       </div>
 
       {/* Stats */}

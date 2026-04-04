@@ -16,6 +16,7 @@ export interface JournalEntry {
   date: string; // ISO date
   photos: string[]; // base64 data URLs
   mood?: 'happy' | 'sleepy' | 'fussy' | 'calm' | 'playful';
+  visibility?: EntryVisibility;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,4 +92,45 @@ export interface FrameSettings {
   frameType: FrameType;
   frameEmail: string;
   frameName: string;
+}
+
+export interface User {
+  id: string;
+  phone: string;
+  name: string;
+  passwordHash: string;
+  verified: boolean;
+  createdAt: string;
+}
+
+export interface FamilyMember {
+  userId: string;
+  name: string;
+  phone: string;
+  role: 'parent' | 'family' | 'friend';
+  joinedAt: string;
+}
+
+export interface FamilyInvite {
+  code: string;
+  createdBy: string;
+  createdByName: string;
+  role: 'family' | 'friend';
+  expiresAt: string;
+  createdAt: string;
+}
+
+export type EntryVisibility = 'private' | 'public';
+
+export interface SharedEntry {
+  entryId: string;
+  userId: string;
+  babyName: string;
+  title: string;
+  content: string;
+  category: JournalCategory;
+  date: string;
+  photos: string[];
+  mood?: string;
+  sharedAt: string;
 }

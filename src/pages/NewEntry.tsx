@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, X, Save } from 'lucide-react';
+import { ArrowLeft, Camera, X, Save, Globe, Lock } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
 import { generateId, fileToBase64, getCategoryEmoji } from '../lib/utils';
-import type { JournalCategory } from '../types';
+import type { JournalCategory, EntryVisibility } from '../types';
 
 const categories: { value: JournalCategory; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -38,6 +38,7 @@ export default function NewEntry() {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [mood, setMood] = useState<string>('');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [visibility, setVisibility] = useState<EntryVisibility>('private');
   const [saving, setSaving] = useState(false);
 
   const editingEntry = editId ? entries.find((e) => e.id === editId) : null;
@@ -50,6 +51,7 @@ export default function NewEntry() {
       setDate(editingEntry.date);
       setMood(editingEntry.mood || '');
       setPhotos(editingEntry.photos);
+      setVisibility(editingEntry.visibility || 'private');
     }
   }, [editingEntry]);
 
@@ -82,6 +84,7 @@ export default function NewEntry() {
       date,
       photos,
       mood: (mood as any) || undefined,
+      visibility,
       createdAt: editingEntry?.createdAt || now,
       updatedAt: now,
     });
@@ -169,6 +172,35 @@ export default function NewEntry() {
               {m.emoji}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Visibility Toggle */}
+      <div>
+        <p className="mb-1.5 text-xs font-medium text-gray-400">Visibility</p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setVisibility('private')}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              visibility === 'private'
+                ? 'bg-gray-700 text-white shadow-sm'
+                : 'bg-white text-gray-500 ring-1 ring-gray-200'
+            }`}
+          >
+            <Lock size={12} />
+            Private
+          </button>
+          <button
+            onClick={() => setVisibility('public')}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+              visibility === 'public'
+                ? 'bg-green-500 text-white shadow-sm'
+                : 'bg-white text-gray-500 ring-1 ring-gray-200'
+            }`}
+          >
+            <Globe size={12} />
+            Public (Family can see)
+          </button>
         </div>
       </div>
 

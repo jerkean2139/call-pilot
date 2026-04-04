@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { BabyProvider, useBabyContext } from './context/BabyContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
@@ -13,12 +14,18 @@ import Gallery from './pages/Gallery';
 import Timeline from './pages/Timeline';
 import Settings from './pages/Settings';
 import Search from './pages/Search';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import FamilyPortal from './pages/FamilyPortal';
+import SharedView from './pages/SharedView';
+import JoinFamily from './pages/JoinFamily';
 import SkeletonList from './components/SkeletonCard';
 
 function AppRoutes() {
-  const { baby, loading } = useBabyContext();
+  const { baby, loading: babyLoading } = useBabyContext();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
-  if (loading) {
+  if (authLoading || babyLoading) {
     return (
       <div className="min-h-screen bg-warm-50 dark:bg-gray-900">
         <div className="mx-auto max-w-lg space-y-6 px-4 pt-8">
@@ -36,9 +43,22 @@ function AppRoutes() {
     );
   }
 
+  // Auth routes are always accessible
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/join/:code" element={<JoinFamily />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
   if (!baby) {
     return (
       <Routes>
+        <Route path="/join/:code" element={<JoinFamily />} />
         <Route path="*" element={<Onboarding />} />
       </Routes>
     );
@@ -57,7 +77,12 @@ function AppRoutes() {
         <Route path="/timeline" element={<Timeline />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/family" element={<FamilyPortal />} />
+        <Route path="/shared/:userId" element={<SharedView />} />
       </Route>
+      <Route path="/join/:code" element={<JoinFamily />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/register" element={<Navigate to="/" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -67,9 +92,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeProvider>
-        <BabyProvider>
-          <AppRoutes />
-        </BabyProvider>
+        <AuthProvider>
+          <BabyProvider>
+            <AppRoutes />
+          </BabyProvider>
+        </AuthProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

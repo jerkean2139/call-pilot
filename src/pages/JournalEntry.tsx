@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trash2, Share2, Monitor, CheckCircle2, Pencil, Sparkles } from 'lucide-react';
+import { ArrowLeft, Trash2, Share2, Monitor, CheckCircle2, Pencil, Sparkles, Globe, Lock } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
 import { formatDate, getCategoryColor, getCategoryEmoji, getMoodEmoji } from '../lib/utils';
 import { getFrameSettings, sharePhotosViaWebShare, openEmailToFrame, downloadPhoto, getFrameTypeName } from '../lib/frameSettings';
@@ -144,6 +144,15 @@ export default function JournalEntry() {
           <span className="text-lg">{getMoodEmoji(entry.mood)}</span>
         )}
         <span className="text-xs text-gray-400">{formatDate(entry.date)}</span>
+        {entry.visibility === 'public' ? (
+          <span className="flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-600">
+            <Globe size={10} /> Public
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500">
+            <Lock size={10} /> Private
+          </span>
+        )}
       </div>
 
       {/* Content */}
