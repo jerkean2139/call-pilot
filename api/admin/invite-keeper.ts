@@ -45,16 +45,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Send SMS invite
     const client = getTwilioClient();
-    const signupUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}/register`
-      : process.env.APP_URL
-        ? `${process.env.APP_URL}/register`
-        : 'the Living Legacy app';
+    const appUrl = process.env.APP_URL
+      || (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : 'https://living-legacy-one.vercel.app');
 
     const roleLabel = role === 'super_admin' ? 'an Admin' : 'a Memory Keeper';
 
+    const message = [
+      `Hi ${name}! ${admin.name} invited you to join Living Legacy as ${roleLabel}.`,
+      ``,
+      `Sign up here: ${appUrl}/register`,
+      `Use this phone number to create your account.`,
+      ``,
+      `To install as an app:`,
+      `iPhone: Open the link in Safari > tap Share > "Add to Home Screen"`,
+      `Android: Open in Chrome > tap Menu (3 dots) > "Add to Home Screen"`,
+      ``,
+      `Reply STOP to opt out.`,
+    ].join('\n');
+
     await client.messages.create({
-      body: `${admin.name} invited you to join Living Legacy as ${roleLabel}! Sign up with this phone number at ${signupUrl}`,
+      body: message,
       from: getTwilioPhone(),
       to: formattedPhone,
     });
