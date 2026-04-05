@@ -94,12 +94,43 @@ export interface FrameSettings {
   frameName: string;
 }
 
+// --- Roles & Auth ---
+
+export type UserRole = 'super_admin' | 'keeper' | 'viewer';
+
+export type Relationship =
+  | 'grandparent'
+  | 'aunt'
+  | 'uncle'
+  | 'cousin'
+  | 'friend'
+  | 'teacher'
+  | 'godparent'
+  | 'sibling'
+  | 'nanny'
+  | 'other';
+
+export const RELATIONSHIP_LABELS: Record<Relationship, string> = {
+  grandparent: 'Grandparent',
+  aunt: 'Aunt',
+  uncle: 'Uncle',
+  cousin: 'Cousin',
+  friend: 'Friend',
+  teacher: 'Teacher',
+  godparent: 'Godparent',
+  sibling: 'Sibling',
+  nanny: 'Nanny',
+  other: 'Other',
+};
+
 export interface User {
   id: string;
   phone: string;
   name: string;
   passwordHash: string;
   verified: boolean;
+  role: UserRole;
+  invitedBy?: string; // userId who invited them
   createdAt: string;
 }
 
@@ -107,7 +138,8 @@ export interface FamilyMember {
   userId: string;
   name: string;
   phone: string;
-  role: 'parent' | 'family' | 'friend';
+  role: 'keeper' | 'viewer';
+  relationship?: Relationship;
   joinedAt: string;
 }
 
@@ -115,7 +147,10 @@ export interface FamilyInvite {
   code: string;
   createdBy: string;
   createdByName: string;
-  role: 'family' | 'friend';
+  inviteType: 'keeper' | 'viewer';
+  relationship?: Relationship;
+  targetPhone?: string; // for keeper invites sent via SMS
+  targetName?: string;
   expiresAt: string;
   createdAt: string;
 }
