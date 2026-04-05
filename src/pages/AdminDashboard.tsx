@@ -17,6 +17,9 @@ import {
   Lock,
   Trash2,
   UserCog,
+  Pencil,
+  X,
+  Save,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -52,6 +55,14 @@ export default function AdminDashboard() {
 
   // Delete state
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  // Edit state
+  const [editingUser, setEditingUser] = useState<Keeper | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editRole, setEditRole] = useState<'keeper' | 'super_admin'>('keeper');
+  const [updating, setUpdating] = useState(false);
+  const [updateResult, setUpdateResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     fetchKeepers();
@@ -150,6 +161,55 @@ export default function AdminDashboard() {
       setCreateResult({ type: 'error', message: 'Network error. Please try again.' });
     }
     setCreating(false);
+  };
+
+  const openEdit = (keeper: Keeper) => {
+    setEditingUser(keeper);
+    setEditName(keeper.name);
+    setEditRole((keeper.role as 'keeper' | 'super_admin') || 'keeper');
+    setEditPassword('');
+    setUpdateResult(null);
+  };
+
+  const closeEdit = () => {
+    setEditingUser(null);
+    setEditName('');
+    setEditPassword('');
+    setUpdateResult(null);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser || !editName.trim()) return;
+    setUpdating(true);
+    setUpdateResult(null);
+
+    try {
+      const res = await fetch('/api/admin/update-user', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: editingUser.userId,
+          phone: editingUser.phone,
+          name: editName.trim(),
+          role: editRole,
+          ...(editPassword ? { password: editPassword } : {}),
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setUpdateResult({ type: 'success', message: `${editName.trim()} updated!` });
+        setTimeout(() => { closeEdit(); fetchKeepers(); }, 1000);
+      } else {
+        setUpdateResult({ type: 'error', message: data.error || 'Failed to update user' });
+      }
+    } catch {
+      setUpdateResult({ type: 'error', message: 'Network error. Please try again.' });
+    }
+    setUpdating(false);
   };
 
   const handleDeleteUser = async (keeper: Keeper) => {
@@ -571,9 +631,16 @@ export default function AdminDashboard() {
                       {keeper.role === 'super_admin' ? 'Admin' : 'Keeper'}
                     </span>
                     <button
+                      onClick={() => openEdit(keeper)}
+                      className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20"
+                      title={`Edit ${keeper.name}`}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                    <button
                       onClick={() => handleDeleteUser(keeper)}
                       disabled={deleting === keeper.userId}
-                      className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                      className="flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
                       title={`Delete ${keeper.name}`}
                     >
                       <Trash2 size={13} />
@@ -592,6 +659,138 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Edit User Modal */}
+      <AnimatePresence>
+        {editingUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+            onClick={closeEdit}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="font-heading text-lg font-semibold text-gray-800 dark:text-white">
+                  Edit User
+                </h3>
+                <button
+                  onClick={closeEdit}
+                  className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <X size={16} className="text-gray-400" />
+                </button>
+              </div>
+
+              <p className="mb-4 text-xs text-gray-400">
+                {editingUser.phone}
+              </p>
+
+              <div className="space-y-3">
+                {/* Name */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Name
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    New Password <span className="text-gray-300">(leave blank to keep current)</span>
+                  </label>
+                  <div className="relative">
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                    <input
+                      type="text"
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      placeholder="Enter new password"
+                      className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Role Toggle */}
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Role
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditRole('keeper')}
+                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                        editRole === 'keeper'
+                          ? 'bg-rose-500 text-white shadow-sm'
+                          : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <Baby size={13} />
+                      Memory Keeper
+                    </button>
+                    <button
+                      onClick={() => setEditRole('super_admin')}
+                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                        editRole === 'super_admin'
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      <Shield size={13} />
+                      Super Admin
+                    </button>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <button
+                  onClick={handleUpdateUser}
+                  disabled={!editName.trim() || updating}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-500 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-blue-600 disabled:opacity-40 active:scale-[0.98]"
+                >
+                  <Save size={14} />
+                  {updating ? 'Saving...' : 'Save Changes'}
+                </button>
+
+                {/* Result */}
+                <AnimatePresence>
+                  {updateResult && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      className={`flex items-center gap-2 rounded-xl p-3 text-sm ${
+                        updateResult.type === 'success'
+                          ? 'bg-green-50 text-green-600 dark:bg-green-900/20'
+                          : 'bg-red-50 text-red-600 dark:bg-red-900/20'
+                      }`}
+                    >
+                      {updateResult.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
+                      {updateResult.message}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
