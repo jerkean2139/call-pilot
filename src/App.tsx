@@ -57,6 +57,23 @@ function AppRoutes() {
     );
   }
 
+  // Super admin skips baby onboarding — goes straight to admin dashboard
+  if (!baby && isSuperAdmin) {
+    return (
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Navigate to="/admin" replace />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/family" element={<FamilyPortal />} />
+          <Route path="/shared/:userId" element={<SharedView />} />
+        </Route>
+        <Route path="/join/:code" element={<JoinFamily />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
+    );
+  }
+
   if (!baby) {
     return (
       <Routes>
