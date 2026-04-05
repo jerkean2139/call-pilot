@@ -31,11 +31,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const existing = await redis.get(keys.user(formattedPhone));
     if (existing) {
       const existingUser = typeof existing === 'string' ? JSON.parse(existing) : existing;
-      if (existingUser.role === 'super_admin') {
-        return res.status(409).json({ error: 'Super admin already exists' });
-      }
-      // Upgrade existing user to super_admin
+      // Update password and ensure super_admin role
+      const passwordHash = await bcrypt.hash(password, 10);
+      existingUser.passwordHash = passwordHash;
       existingUser.role = 'super_admin';
+      if (name) existingUser.name = name;
       await redis.set(keys.user(formattedPhone), JSON.stringify(existingUser));
       await redis.set(keys.userById(existingUser.id), JSON.stringify(existingUser));
       const token = createToken({ userId: existingUser.id, phone: formattedPhone });
