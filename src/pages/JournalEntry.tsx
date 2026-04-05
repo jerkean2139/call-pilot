@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Trash2, Share2, Monitor, CheckCircle2, Pencil, Sparkles, Globe, Lock } from 'lucide-react';
+import { ArrowLeft, Trash2, Share2, Monitor, CheckCircle2, Pencil, Sparkles, Globe, Lock, Play, Video } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
 import { formatDate, getCategoryColor, getCategoryEmoji, getMoodEmoji } from '../lib/utils';
 import { getFrameSettings, sharePhotosViaWebShare, openEmailToFrame, downloadPhoto, getFrameTypeName } from '../lib/frameSettings';
+import { getMediaUrl, isVideoMedia, formatDuration } from '../lib/cloudinary';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ShareMoment from '../components/ShareMoment';
 
@@ -69,10 +70,38 @@ export default function JournalEntry() {
         </button>
       </div>
 
-      {/* Photos */}
-      {entry.photos.length > 0 && (
+      {/* Media (Photos & Videos) */}
+      {(entry.photos.length > 0 || (entry.media && entry.media.length > 0)) && (
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {entry.photos.map((photo, i) => (
+          {/* Cloud media */}
+          {entry.media?.map((item, i) => (
+            isVideoMedia(item) ? (
+              <div key={`media-${i}`} className="relative shrink-0">
+                <video
+                  src={getMediaUrl(item)}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  poster={item.thumbnailUrl}
+                  className="h-48 w-auto rounded-2xl bg-black"
+                />
+                {item.duration && (
+                  <div className="absolute bottom-2 right-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                    {formatDuration(item.duration)}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <img
+                key={`media-${i}`}
+                src={getMediaUrl(item)}
+                alt=""
+                className="h-48 w-auto shrink-0 rounded-2xl object-cover"
+              />
+            )
+          ))}
+          {/* Legacy base64 photos */}
+          {(!entry.media || entry.media.length === 0) && entry.photos.map((photo, i) => (
             <img
               key={i}
               src={photo}

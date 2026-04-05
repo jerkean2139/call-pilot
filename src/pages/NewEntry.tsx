@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, X, Save, Globe, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Camera, Video, X, Save, Globe, Lock, Loader2 } from 'lucide-react';
 import { useBabyContext } from '../context/BabyContext';
-import { generateId, fileToBase64, getCategoryEmoji } from '../lib/utils';
-import type { JournalCategory, EntryVisibility } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { generateId, getCategoryEmoji } from '../lib/utils';
+import { uploadToCloudinary, getMediaUrl, isVideoMedia, formatDuration } from '../lib/cloudinary';
+import type { JournalCategory, EntryVisibility, MediaItem } from '../types';
 
 const categories: { value: JournalCategory; label: string }[] = [
   { value: 'daily', label: 'Daily' },
@@ -27,19 +29,31 @@ const moods = [
   { value: 'playful', emoji: '🤗' },
 ] as const;
 
+interface UploadingFile {
+  id: string;
+  file: File;
+  preview: string;
+  progress: number;
+  type: 'image' | 'video';
+  error?: string;
+}
+
 export default function NewEntry() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const { baby, entries, saveEntry } = useBabyContext();
+  const { token } = useAuth();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<JournalCategory>('daily');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [mood, setMood] = useState<string>('');
-  const [photos, setPhotos] = useState<string[]>([]);
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [legacyPhotos, setLegacyPhotos] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<EntryVisibility>('private');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState<UploadingFile[]>([]);
 
   const editingEntry = editId ? entries.find((e) => e.id === editId) : null;
 
@@ -50,29 +64,99 @@ export default function NewEntry() {
       setCategory(editingEntry.category);
       setDate(editingEntry.date);
       setMood(editingEntry.mood || '');
-      setPhotos(editingEntry.photos);
       setVisibility(editingEntry.visibility || 'private');
+      // Load existing media
+      if (editingEntry.media && editingEntry.media.length > 0) {
+        setMedia(editingEntry.media);
+      }
+      // Keep legacy photos
+      if (editingEntry.photos && editingEntry.photos.length > 0 && (!editingEntry.media || editingEntry.media.length === 0)) {
+        setLegacyPhotos(editingEntry.photos);
+      }
     }
   }, [editingEntry]);
 
-  const handleAddPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const totalMedia = media.length + legacyPhotos.length + uploading.length;
+
+  const handleAddMedia = async (e: React.ChangeEvent<HTMLInputElement>, accept: 'image' | 'video') => {
     const files = e.target.files;
-    if (!files) return;
-    const newPhotos: string[] = [];
+    if (!files || !token) return;
+
+    const newUploads: UploadingFile[] = [];
     for (const file of Array.from(files)) {
-      if (photos.length + newPhotos.length >= 5) break;
-      const base64 = await fileToBase64(file);
-      newPhotos.push(base64);
+      if (totalMedia + newUploads.length >= 10) break;
+
+      // Video size limit: 100MB, image: 10MB
+      const maxSize = accept === 'video' ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (file.size > maxSize) continue;
+
+      // Video duration limit: 10 min
+      const id = generateId();
+      const preview = accept === 'image'
+        ? URL.createObjectURL(file)
+        : URL.createObjectURL(file);
+
+      newUploads.push({
+        id,
+        file,
+        preview,
+        progress: 0,
+        type: accept,
+      });
     }
-    setPhotos((prev) => [...prev, ...newPhotos]);
+
+    if (newUploads.length === 0) return;
+
+    setUploading(prev => [...prev, ...newUploads]);
+
+    // Upload each file
+    for (const upload of newUploads) {
+      try {
+        const mediaItem = await uploadToCloudinary(
+          upload.file,
+          token,
+          (progress) => {
+            setUploading(prev =>
+              prev.map(u => u.id === upload.id ? { ...u, progress: progress.percent } : u)
+            );
+          }
+        );
+
+        // Remove from uploading, add to media
+        setUploading(prev => prev.filter(u => u.id !== upload.id));
+        setMedia(prev => [...prev, mediaItem]);
+        URL.revokeObjectURL(upload.preview);
+      } catch {
+        setUploading(prev =>
+          prev.map(u => u.id === upload.id ? { ...u, error: 'Upload failed', progress: 0 } : u)
+        );
+      }
+    }
+
+    // Reset input
+    e.target.value = '';
   };
 
-  const removePhoto = (index: number) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  const removeMedia = (index: number) => {
+    setMedia(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeLegacyPhoto = (index: number) => {
+    setLegacyPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeUpload = (id: string) => {
+    setUploading(prev => {
+      const item = prev.find(u => u.id === id);
+      if (item) URL.revokeObjectURL(item.preview);
+      return prev.filter(u => u.id !== id);
+    });
   };
 
   const handleSave = async () => {
     if (!title || !baby) return;
+    if (uploading.some(u => !u.error)) return; // Wait for uploads
+
     setSaving(true);
     const now = new Date().toISOString();
     await saveEntry({
@@ -82,7 +166,8 @@ export default function NewEntry() {
       content,
       category,
       date,
-      photos,
+      photos: legacyPhotos, // Keep legacy for backward compat
+      media: media.length > 0 ? media : undefined,
       mood: (mood as any) || undefined,
       visibility,
       createdAt: editingEntry?.createdAt || now,
@@ -91,6 +176,8 @@ export default function NewEntry() {
     setSaving(false);
     navigate(editingEntry ? `/journal/${editingEntry.id}` : '/journal');
   };
+
+  const hasActiveUploads = uploading.some(u => !u.error);
 
   return (
     <motion.div
@@ -111,11 +198,15 @@ export default function NewEntry() {
         </h1>
         <button
           onClick={handleSave}
-          disabled={!title || saving}
+          disabled={!title || saving || hasActiveUploads}
           className="flex items-center gap-1.5 rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-rose-600 disabled:opacity-40 active:scale-95"
         >
-          <Save size={14} />
-          {saving ? 'Saving...' : 'Save'}
+          {hasActiveUploads ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Save size={14} />
+          )}
+          {saving ? 'Saving...' : hasActiveUploads ? 'Uploading...' : 'Save'}
         </button>
       </div>
 
@@ -213,36 +304,140 @@ export default function NewEntry() {
         className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none transition-all focus:border-rose-300 focus:ring-2 focus:ring-rose-100"
       />
 
-      {/* Photos */}
+      {/* Media (Photos & Videos) */}
       <div>
+        <p className="mb-1.5 text-xs font-medium text-gray-400">
+          Photos & Videos ({totalMedia}/10)
+        </p>
         <div className="flex flex-wrap gap-2">
-          {photos.map((photo, i) => (
-            <div key={i} className="relative">
+          {/* Legacy base64 photos */}
+          {legacyPhotos.map((photo, i) => (
+            <div key={`legacy-${i}`} className="relative">
               <img
                 src={photo}
                 alt=""
                 className="h-20 w-20 rounded-xl object-cover"
               />
               <button
-                onClick={() => removePhoto(i)}
+                onClick={() => removeLegacyPhoto(i)}
                 className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
               >
                 <X size={12} />
               </button>
             </div>
           ))}
-          {photos.length < 5 && (
-            <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 transition-all hover:border-rose-300">
-              <Camera size={20} className="text-gray-300" />
-              <span className="mt-0.5 text-xs text-gray-300">Add</span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleAddPhoto}
-                className="hidden"
-              />
-            </label>
+
+          {/* Cloud media */}
+          {media.map((item, i) => (
+            <div key={`media-${i}`} className="relative">
+              {isVideoMedia(item) ? (
+                <div className="relative h-20 w-20 rounded-xl bg-gray-900 overflow-hidden">
+                  {item.thumbnailUrl ? (
+                    <img
+                      src={item.thumbnailUrl}
+                      alt=""
+                      className="h-full w-full object-cover opacity-80"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Video size={20} className="text-white/60" />
+                    </div>
+                  )}
+                  <div className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[9px] text-white">
+                    {formatDuration(item.duration)}
+                  </div>
+                </div>
+              ) : (
+                <img
+                  src={getMediaUrl(item)}
+                  alt=""
+                  className="h-20 w-20 rounded-xl object-cover"
+                />
+              )}
+              <button
+                onClick={() => removeMedia(i)}
+                className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+
+          {/* Uploading items */}
+          <AnimatePresence>
+            {uploading.map((item) => (
+              <motion.div
+                key={item.id}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="relative"
+              >
+                <div className="relative h-20 w-20 rounded-xl overflow-hidden">
+                  {item.type === 'video' ? (
+                    <video
+                      src={item.preview}
+                      className="h-full w-full object-cover opacity-50"
+                    />
+                  ) : (
+                    <img
+                      src={item.preview}
+                      alt=""
+                      className="h-full w-full object-cover opacity-50"
+                    />
+                  )}
+                  {/* Progress overlay */}
+                  {!item.error ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <div className="text-center">
+                        <Loader2 size={16} className="mx-auto animate-spin text-white" />
+                        <span className="mt-0.5 block text-[10px] font-semibold text-white">
+                          {item.progress}%
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-red-500/30">
+                      <span className="text-[10px] font-semibold text-white">Failed</span>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeUpload(item.id)}
+                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
+                >
+                  <X size={12} />
+                </button>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Add buttons */}
+          {totalMedia < 10 && (
+            <>
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 transition-all hover:border-rose-300">
+                <Camera size={20} className="text-gray-300" />
+                <span className="mt-0.5 text-[10px] text-gray-300">Photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => handleAddMedia(e, 'image')}
+                  className="hidden"
+                />
+              </label>
+              <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-violet-200 transition-all hover:border-violet-400">
+                <Video size={20} className="text-violet-300" />
+                <span className="mt-0.5 text-[10px] text-violet-300">Video</span>
+                <input
+                  type="file"
+                  accept="video/*"
+                  multiple
+                  onChange={(e) => handleAddMedia(e, 'video')}
+                  className="hidden"
+                />
+              </label>
+            </>
           )}
         </div>
       </div>

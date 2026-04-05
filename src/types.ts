@@ -7,6 +7,14 @@ export interface Baby {
   createdAt: string;
 }
 
+export interface MediaItem {
+  url: string;           // Cloudinary URL or base64 data URL (backward compat)
+  type: 'image' | 'video';
+  thumbnailUrl?: string; // Auto-generated for videos
+  publicId?: string;     // Cloudinary public_id for management
+  duration?: number;     // Video duration in seconds
+}
+
 export interface JournalEntry {
   id: string;
   babyId: string;
@@ -14,7 +22,8 @@ export interface JournalEntry {
   content: string;
   category: JournalCategory;
   date: string; // ISO date
-  photos: string[]; // base64 data URLs
+  photos: string[]; // base64 data URLs (legacy, kept for backward compat)
+  media?: MediaItem[]; // Cloud-hosted photos and videos
   mood?: 'happy' | 'sleepy' | 'fussy' | 'calm' | 'playful';
   visibility?: EntryVisibility;
   createdAt: string;
