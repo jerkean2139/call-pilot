@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? (typeof keeperInviteData === 'string' ? JSON.parse(keeperInviteData) : keeperInviteData)
       : null;
 
-    const role = keeperInvite ? 'keeper' : 'viewer';
+    const role = keeperInvite ? (keeperInvite.role || 'keeper') : 'viewer';
     const invitedBy = keeperInvite?.invitedBy || undefined;
 
     const user = {

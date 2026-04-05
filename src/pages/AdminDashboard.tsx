@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [showInvite, setShowInvite] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
+  const [inviteRole, setInviteRole] = useState<'keeper' | 'super_admin'>('keeper');
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,7 +76,7 @@ export default function AdminDashboard() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ phone: invitePhone, name: inviteName }),
+        body: JSON.stringify({ phone: invitePhone, name: inviteName, role: inviteRole }),
       });
       const data = await res.json();
 
@@ -190,13 +191,45 @@ export default function AdminDashboard() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                    Invite As
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setInviteRole('keeper')}
+                      className={`flex-1 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                        inviteRole === 'keeper'
+                          ? 'bg-rose-500 text-white shadow-sm'
+                          : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      Memory Keeper
+                    </button>
+                    <button
+                      onClick={() => setInviteRole('super_admin')}
+                      className={`flex-1 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                        inviteRole === 'super_admin'
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
+                      Super Admin
+                    </button>
+                  </div>
+                </div>
+
                 <button
                   onClick={handleSendInvite}
                   disabled={!inviteName || invitePhone.length < 10 || sending}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-rose-500 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-rose-600 disabled:opacity-40 active:scale-[0.98]"
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white shadow-sm transition-all disabled:opacity-40 active:scale-[0.98] ${
+                    inviteRole === 'super_admin'
+                      ? 'bg-amber-500 hover:bg-amber-600'
+                      : 'bg-rose-500 hover:bg-rose-600'
+                  }`}
                 >
                   <Send size={14} />
-                  {sending ? 'Sending Invite...' : 'Send SMS Invite'}
+                  {sending ? 'Sending Invite...' : `Send ${inviteRole === 'super_admin' ? 'Admin' : 'Keeper'} Invite`}
                 </button>
 
                 <AnimatePresence>

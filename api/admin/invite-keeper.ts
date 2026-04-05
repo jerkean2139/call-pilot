@@ -15,10 +15,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const admin = typeof userData === 'string' ? JSON.parse(userData) : userData;
 
     if (admin.role !== 'super_admin') {
-      return res.status(403).json({ error: 'Only super admins can invite Memory Keepers' });
+      return res.status(403).json({ error: 'Only super admins can send invites' });
     }
 
-    const { phone, name } = req.body;
+    const { phone, name, role = 'keeper' } = req.body;
     if (!phone || !name) {
       return res.status(400).json({ error: 'Phone and name are required' });
     }
@@ -32,15 +32,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(409).json({ error: 'This phone number is already registered' });
     }
 
-    // Store keeper invite so registration knows to assign keeper role
+    // Store invite so registration knows to assign the correct role
     const invite = {
       phone: formattedPhone,
       name,
+      role, // 'keeper' or 'super_admin'
       invitedBy: admin.id,
       invitedByName: admin.name,
       createdAt: new Date().toISOString(),
     };
-    // Keeper invite never expires (until used)
     await redis.set(keys.keeperInvite(formattedPhone), JSON.stringify(invite));
 
     // Send SMS invite
@@ -51,8 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? `${process.env.APP_URL}/register`
         : 'the Living Legacy app';
 
+    const roleLabel = role === 'super_admin' ? 'an Admin' : 'a Memory Keeper';
+
     await client.messages.create({
-      body: `${admin.name} invited you to join Living Legacy as a Memory Keeper! Sign up with this phone number at ${signupUrl}`,
+      body: `${admin.name} invited you to join Living Legacy as ${roleLabel}! Sign up with this phone number at ${signupUrl}`,
       from: getTwilioPhone(),
       to: formattedPhone,
     });
@@ -63,7 +65,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       invite,
     });
   } catch (error: any) {
-    console.error('Invite keeper error:', error);
+    console.error('Invite error:', error);
     return res.status(500).json({ error: 'Failed to send invite' });
   }
 }
