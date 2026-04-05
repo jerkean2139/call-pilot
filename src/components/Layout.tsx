@@ -8,7 +8,7 @@ export default function Layout() {
     <div className="min-h-screen bg-warm-50 pb-20 dark:bg-gray-900">
       <OfflineIndicator />
       <UpdatePrompt />
-      <main className="mx-auto max-w-lg px-4 pt-4">
+      <main className="mx-auto max-w-lg px-5 pt-4">
         <Outlet />
       </main>
       <BottomNav />

@@ -47,7 +47,7 @@ export default function JoinFamily() {
   }, [code, isAuthenticated, token, navigate]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-warm-50 px-4 dark:bg-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-warm-50 px-6 dark:bg-gray-900">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
