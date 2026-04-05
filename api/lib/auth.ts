@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import type { VercelRequest } from '@vercel/node';
-import { getRedis, keys } from './redis';
+import { getRedis, keys } from './redis.js';
 
 interface TokenPayload {
   userId: string;

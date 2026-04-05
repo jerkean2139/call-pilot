@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRedis, keys } from '../lib/redis';
-import { getAuthUser, setCorsHeaders } from '../lib/auth';
+import { getRedis, keys } from '../lib/redis.js';
+import { getAuthUser, setCorsHeaders } from '../lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);

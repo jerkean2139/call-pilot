@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRedis, keys } from '../lib/redis';
-import { getTwilioClient, getTwilioPhone, formatPhone } from '../lib/twilio';
-import { getAuthUser, setCorsHeaders } from '../lib/auth';
+import { getRedis, keys } from '../lib/redis.js';
+import { getTwilioClient, getTwilioPhone, formatPhone } from '../lib/twilio.js';
+import { getAuthUser, setCorsHeaders } from '../lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getRedis, keys } from '../lib/redis';
-import { getAuthUser, setCorsHeaders } from '../lib/auth';
+import { getRedis, keys } from '../lib/redis.js';
+import { getAuthUser, setCorsHeaders } from '../lib/auth.js';
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';

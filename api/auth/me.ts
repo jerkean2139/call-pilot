@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getAuthUser, setCorsHeaders } from '../lib/auth';
+import { getAuthUser, setCorsHeaders } from '../lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);

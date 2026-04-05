@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import bcrypt from 'bcryptjs';
-import { getRedis, keys } from '../lib/redis';
-import { formatPhone } from '../lib/twilio';
-import { createToken, setCorsHeaders } from '../lib/auth';
+import { getRedis, keys } from '../lib/redis.js';
+import { formatPhone } from '../lib/twilio.js';
+import { createToken, setCorsHeaders } from '../lib/auth.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
