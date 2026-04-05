@@ -18,6 +18,8 @@ interface AuthContextValue {
   verifyOTP: (phone: string, otp: string) => Promise<{ success: boolean; userExists?: boolean; error?: string }>;
   register: (phone: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
   setupAdmin: (phone: string, password: string, name: string, setupKey: string) => Promise<{ success: boolean; error?: string }>;
+  forgotPassword: (phone: string) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (phone: string, otp: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
   isSuperAdmin: boolean;
@@ -153,6 +155,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const forgotPassword = useCallback(async (phone: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error };
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (phone: string, otp: string, newPassword: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error };
+
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -171,6 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyOTP,
         register,
         setupAdmin,
+        forgotPassword,
+        resetPassword,
         logout,
         isAuthenticated: !!user,
         isSuperAdmin: user?.role === 'super_admin',

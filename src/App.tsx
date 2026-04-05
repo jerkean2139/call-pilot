@@ -20,6 +20,7 @@ import FamilyPortal from './pages/FamilyPortal';
 import SharedView from './pages/SharedView';
 import JoinFamily from './pages/JoinFamily';
 import AdminDashboard from './pages/AdminDashboard';
+import ForgotPassword from './pages/ForgotPassword';
 import SkeletonList from './components/SkeletonCard';
 
 function AppRoutes() {
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/join/:code" element={<JoinFamily />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
