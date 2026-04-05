@@ -14,6 +14,9 @@ import {
   LogOut,
   Moon,
   Sun,
+  Lock,
+  Trash2,
+  UserCog,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -37,6 +40,18 @@ export default function AdminDashboard() {
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Manual create user state
+  const [showCreate, setShowCreate] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createPhone, setCreatePhone] = useState('');
+  const [createPassword, setCreatePassword] = useState('');
+  const [createRole, setCreateRole] = useState<'keeper' | 'super_admin'>('keeper');
+  const [creating, setCreating] = useState(false);
+  const [createResult, setCreateResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Delete state
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchKeepers();
@@ -98,6 +113,64 @@ export default function AdminDashboard() {
       setSendResult({ type: 'error', message: 'Network error. Please try again.' });
     }
     setSending(false);
+  };
+
+  const handleCreateUser = async () => {
+    if (!createName || createPhone.length < 10 || !createPassword) return;
+    setCreating(true);
+    setCreateResult(null);
+
+    try {
+      const res = await fetch('/api/admin/create-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          phone: createPhone,
+          name: createName,
+          password: createPassword,
+          role: createRole,
+        }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setCreateResult({ type: 'success', message: `${createName} created! They can log in now.` });
+        setCreateName('');
+        setCreatePhone('');
+        setCreatePassword('');
+        setCreateRole('keeper');
+        setTimeout(fetchKeepers, 500);
+      } else {
+        setCreateResult({ type: 'error', message: data.error || 'Failed to create user' });
+      }
+    } catch {
+      setCreateResult({ type: 'error', message: 'Network error. Please try again.' });
+    }
+    setCreating(false);
+  };
+
+  const handleDeleteUser = async (keeper: Keeper) => {
+    if (!confirm(`Delete ${keeper.name}? This cannot be undone.`)) return;
+    setDeleting(keeper.userId);
+    try {
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: keeper.userId, phone: keeper.phone }),
+      });
+      if (res.ok) {
+        fetchKeepers();
+      }
+    } catch {
+      // ignore
+    }
+    setDeleting(null);
   };
 
   if (user?.role !== 'super_admin') return null;
@@ -287,6 +360,152 @@ export default function AdminDashboard() {
             </AnimatePresence>
           </div>
 
+          {/* Manual Create User */}
+          <div className="rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
+            <button
+              onClick={() => { setShowCreate(!showCreate); setCreateResult(null); }}
+              className="flex w-full items-center gap-3 p-5"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/30">
+                <UserCog size={18} className="text-violet-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <h2 className="font-heading font-semibold text-gray-800 dark:text-white">
+                  Create User
+                </h2>
+                <p className="text-xs text-gray-400">Add a user with phone & password (no SMS needed)</p>
+              </div>
+              {showCreate ? <ChevronUp size={18} className="text-gray-300" /> : <ChevronDown size={18} className="text-gray-300" />}
+            </button>
+
+            <AnimatePresence>
+              {showCreate && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-3 border-t border-gray-100 p-5 pt-4 dark:border-gray-700">
+                    {/* Role Toggle */}
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Role
+                      </label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setCreateRole('keeper')}
+                          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                            createRole === 'keeper'
+                              ? 'bg-rose-500 text-white shadow-sm'
+                              : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <Baby size={13} />
+                          Memory Keeper
+                        </button>
+                        <button
+                          onClick={() => setCreateRole('super_admin')}
+                          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-semibold transition-all ${
+                            createRole === 'super_admin'
+                              ? 'bg-amber-500 text-white shadow-sm'
+                              : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          <Shield size={13} />
+                          Super Admin
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Name */}
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Name
+                      </label>
+                      <div className="relative">
+                        <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                        <input
+                          type="text"
+                          value={createName}
+                          onChange={(e) => setCreateName(e.target.value)}
+                          placeholder="Karley Kean"
+                          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition-all focus:border-violet-300 focus:ring-2 focus:ring-violet-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Phone Number
+                      </label>
+                      <div className="relative">
+                        <Phone size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                        <input
+                          type="tel"
+                          value={formatPhoneDisplay(createPhone)}
+                          onChange={(e) => {
+                            const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                            setCreatePhone(digits);
+                          }}
+                          placeholder="(765) 977-7008"
+                          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition-all focus:border-violet-300 focus:ring-2 focus:ring-violet-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Password */}
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+                        <input
+                          type="text"
+                          value={createPassword}
+                          onChange={(e) => setCreatePassword(e.target.value)}
+                          placeholder="Enter password"
+                          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition-all focus:border-violet-300 focus:ring-2 focus:ring-violet-100 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Create Button */}
+                    <button
+                      onClick={handleCreateUser}
+                      disabled={!createName || createPhone.length < 10 || !createPassword || creating}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-500 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-violet-600 disabled:opacity-40 active:scale-[0.98]"
+                    >
+                      <UserCog size={14} />
+                      {creating ? 'Creating...' : 'Create User'}
+                    </button>
+
+                    {/* Result */}
+                    <AnimatePresence>
+                      {createResult && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0 }}
+                          className={`flex items-center gap-2 rounded-xl p-3 text-sm ${
+                            createResult.type === 'success'
+                              ? 'bg-green-50 text-green-600 dark:bg-green-900/20'
+                              : 'bg-red-50 text-red-600 dark:bg-red-900/20'
+                          }`}
+                        >
+                          {createResult.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
+                          {createResult.message}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           {/* People List */}
           <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-100 dark:bg-gray-800 dark:ring-gray-700">
             <h2 className="mb-4 font-heading font-semibold text-gray-800 dark:text-white">
@@ -351,6 +570,14 @@ export default function AdminDashboard() {
                     }`}>
                       {keeper.role === 'super_admin' ? 'Admin' : 'Keeper'}
                     </span>
+                    <button
+                      onClick={() => handleDeleteUser(keeper)}
+                      disabled={deleting === keeper.userId}
+                      className="ml-1 flex h-7 w-7 items-center justify-center rounded-full text-gray-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                      title={`Delete ${keeper.name}`}
+                    >
+                      <Trash2 size={13} />
+                    </button>
                   </div>
                 ))}
               </div>
