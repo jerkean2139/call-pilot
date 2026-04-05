@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import type { UserRole } from '../types';
 
 interface AuthUser {
   id: string;
   phone: string;
   name: string;
   verified: boolean;
+  role: UserRole;
 }
 
 interface AuthContextValue {
@@ -15,8 +17,11 @@ interface AuthContextValue {
   sendOTP: (phone: string) => Promise<{ success: boolean; error?: string }>;
   verifyOTP: (phone: string, otp: string) => Promise<{ success: boolean; userExists?: boolean; error?: string }>;
   register: (phone: string, password: string, name: string) => Promise<{ success: boolean; error?: string }>;
+  setupAdmin: (phone: string, password: string, name: string, setupKey: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
+  isKeeper: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -38,7 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
-      // Verify token is still valid
       fetch(`${API_BASE}/auth/me`, {
         headers: { Authorization: `Bearer ${storedToken}` },
       })
@@ -51,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(USER_KEY, JSON.stringify(data.user));
         })
         .catch(() => {
-          // Token expired or invalid - keep local session for offline use
           console.warn('Could not verify session, using cached data');
         })
         .finally(() => setLoading(false));
@@ -130,6 +133,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setupAdmin = useCallback(async (phone: string, password: string, name: string, setupKey: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password, name, setupKey }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error };
+
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem(TOKEN_KEY, data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(data.user));
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -147,8 +170,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sendOTP,
         verifyOTP,
         register,
+        setupAdmin,
         logout,
         isAuthenticated: !!user,
+        isSuperAdmin: user?.role === 'super_admin',
+        isKeeper: user?.role === 'keeper' || user?.role === 'super_admin',
       }}
     >
       {children}

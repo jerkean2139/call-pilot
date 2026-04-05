@@ -4,13 +4,22 @@ import { getRedis, keys } from '../lib/redis';
 import { formatPhone } from '../lib/twilio';
 import { createToken, setCorsHeaders } from '../lib/auth';
 
+// One-time setup endpoint to create the super admin account.
+// Only works if no super admin exists yet.
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCorsHeaders(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { phone, password, name } = req.body;
+    const { phone, password, name, setupKey } = req.body;
+
+    // Require setup key from environment to prevent unauthorized access
+    const expectedKey = process.env.ADMIN_SETUP_KEY;
+    if (!expectedKey || setupKey !== expectedKey) {
+      return res.status(403).json({ error: 'Invalid setup key' });
+    }
+
     if (!phone || !password || !name) {
       return res.status(400).json({ error: 'Phone, password, and name are required' });
     }
@@ -21,20 +30,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Check if user already exists
     const existing = await redis.get(keys.user(formattedPhone));
     if (existing) {
-      return res.status(409).json({ error: 'User already exists' });
+      const existingUser = typeof existing === 'string' ? JSON.parse(existing) : existing;
+      if (existingUser.role === 'super_admin') {
+        return res.status(409).json({ error: 'Super admin already exists' });
+      }
+      // Upgrade existing user to super_admin
+      existingUser.role = 'super_admin';
+      await redis.set(keys.user(formattedPhone), JSON.stringify(existingUser));
+      await redis.set(keys.userById(existingUser.id), JSON.stringify(existingUser));
+      const token = createToken({ userId: existingUser.id, phone: formattedPhone });
+      return res.status(200).json({
+        token,
+        user: { id: existingUser.id, phone: formattedPhone, name: existingUser.name, verified: true, role: 'super_admin' },
+      });
     }
 
     const userId = crypto.randomUUID();
     const passwordHash = await bcrypt.hash(password, 10);
-
-    // Check if this phone has a keeper invite (sent by super admin)
-    const keeperInviteData = await redis.get(keys.keeperInvite(formattedPhone));
-    const keeperInvite = keeperInviteData
-      ? (typeof keeperInviteData === 'string' ? JSON.parse(keeperInviteData) : keeperInviteData)
-      : null;
-
-    const role = keeperInvite ? 'keeper' : 'viewer';
-    const invitedBy = keeperInvite?.invitedBy || undefined;
 
     const user = {
       id: userId,
@@ -42,45 +54,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       name,
       passwordHash,
       verified: true,
-      role,
-      invitedBy,
+      role: 'super_admin',
       createdAt: new Date().toISOString(),
     };
 
-    // Store user by phone and by ID
     await redis.set(keys.user(formattedPhone), JSON.stringify(user));
     await redis.set(keys.userById(userId), JSON.stringify(user));
-
-    // Initialize empty family members
     await redis.set(keys.familyMembers(userId), JSON.stringify([]));
-
-    // If keeper, add to all keepers list
-    if (role === 'keeper') {
-      const keepersData = await redis.get(keys.allKeepers());
-      const keepers = keepersData
-        ? (typeof keepersData === 'string' ? JSON.parse(keepersData) : keepersData)
-        : [];
-      keepers.push({
-        userId,
-        name,
-        phone: formattedPhone,
-        role: 'keeper',
-        joinedAt: new Date().toISOString(),
-      });
-      await redis.set(keys.allKeepers(), JSON.stringify(keepers));
-
-      // Clean up the keeper invite
-      await redis.del(keys.keeperInvite(formattedPhone));
-    }
+    await redis.set(keys.allKeepers(), JSON.stringify([]));
 
     const token = createToken({ userId, phone: formattedPhone });
 
     return res.status(201).json({
       token,
-      user: { id: userId, phone: formattedPhone, name, verified: true, role },
+      user: { id: userId, phone: formattedPhone, name, verified: true, role: 'super_admin' },
     });
   } catch (error: any) {
-    console.error('Register error:', error);
-    return res.status(500).json({ error: 'Registration failed' });
+    console.error('Setup error:', error);
+    return res.status(500).json({ error: 'Setup failed' });
   }
 }

@@ -34,7 +34,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json({
       token,
-      user: { id: user.id, phone: user.phone, name: user.name, verified: user.verified },
+      user: { id: user.id, phone: user.phone, name: user.name, verified: user.verified, role: user.role || 'viewer' },
     });
   } catch (error: any) {
     console.error('Login error:', error);

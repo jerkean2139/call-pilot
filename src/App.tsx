@@ -19,11 +19,12 @@ import Register from './pages/Register';
 import FamilyPortal from './pages/FamilyPortal';
 import SharedView from './pages/SharedView';
 import JoinFamily from './pages/JoinFamily';
+import AdminDashboard from './pages/AdminDashboard';
 import SkeletonList from './components/SkeletonCard';
 
 function AppRoutes() {
   const { baby, loading: babyLoading } = useBabyContext();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, isSuperAdmin, loading: authLoading } = useAuth();
 
   if (authLoading || babyLoading) {
     return (
@@ -43,7 +44,6 @@ function AppRoutes() {
     );
   }
 
-  // Auth routes are always accessible
   if (!isAuthenticated) {
     return (
       <Routes>
@@ -79,6 +79,9 @@ function AppRoutes() {
         <Route path="/search" element={<Search />} />
         <Route path="/family" element={<FamilyPortal />} />
         <Route path="/shared/:userId" element={<SharedView />} />
+        {isSuperAdmin && (
+          <Route path="/admin" element={<AdminDashboard />} />
+        )}
       </Route>
       <Route path="/join/:code" element={<JoinFamily />} />
       <Route path="/login" element={<Navigate to="/" replace />} />

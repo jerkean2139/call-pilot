@@ -23,19 +23,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (req.method === 'POST') {
     try {
-      const { role = 'family' } = req.body || {};
+      const { relationship } = req.body || {};
       const code = generateInviteCode();
 
       const invite = {
         code,
         createdBy: user.id,
         createdByName: user.name,
-        role,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+        inviteType: 'viewer',
+        relationship: relationship || undefined,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         createdAt: new Date().toISOString(),
       };
 
-      // Store invite with 7-day TTL
       await redis.set(keys.invite(code), JSON.stringify(invite), { ex: 7 * 24 * 60 * 60 });
 
       return res.status(201).json({ invite });
@@ -46,7 +46,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'GET') {
-    // List invites isn't stored centrally, return a message
     return res.status(200).json({ message: 'Use invite code to join a family' });
   }
 

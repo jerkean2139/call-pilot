@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
 
     return res.status(200).json({
-      user: { id: user.id, phone: user.phone, name: user.name, verified: user.verified },
+      user: { id: user.id, phone: user.phone, name: user.name, verified: user.verified, role: user.role || 'viewer' },
     });
   } catch (error: any) {
     console.error('Auth check error:', error);

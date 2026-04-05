@@ -12,7 +12,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!userData) return res.status(401).json({ error: 'Not authenticated' });
     const user = typeof userData === 'string' ? JSON.parse(userData) : userData;
 
-    const { code } = req.body;
+    const { code, relationship } = req.body;
     if (!code) return res.status(400).json({ error: 'Invite code is required' });
 
     const redis = getRedis();
@@ -21,13 +21,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const invite = typeof inviteData === 'string' ? JSON.parse(inviteData) : inviteData;
 
-    // Add current user to the inviter's family members
     const membersData = await redis.get(keys.familyMembers(invite.createdBy));
     const members = membersData
       ? (typeof membersData === 'string' ? JSON.parse(membersData) : membersData)
       : [];
 
-    // Check if already a member
     if (members.some((m: any) => m.userId === user.id)) {
       return res.status(200).json({ message: 'Already a family member' });
     }
@@ -36,13 +34,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       userId: user.id,
       name: user.name,
       phone: user.phone,
-      role: invite.role,
+      role: invite.inviteType || 'viewer',
+      relationship: relationship || invite.relationship || undefined,
       joinedAt: new Date().toISOString(),
     });
 
     await redis.set(keys.familyMembers(invite.createdBy), JSON.stringify(members));
-
-    // Also store reverse mapping so the joining user knows which family they belong to
     await redis.set(keys.family(user.id), invite.createdBy);
 
     return res.status(200).json({

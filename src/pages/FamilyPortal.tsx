@@ -11,15 +11,23 @@ import {
   Link2,
   Crown,
   Heart,
+  Baby,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import type { FamilyMember, FamilyInvite } from '../types';
+import { RELATIONSHIP_LABELS } from '../types';
+import type { FamilyMember, Relationship } from '../types';
+
+const RELATIONSHIPS: Relationship[] = [
+  'grandparent', 'aunt', 'uncle', 'cousin', 'friend',
+  'teacher', 'godparent', 'sibling', 'nanny', 'other',
+];
 
 export default function FamilyPortal() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
   const [members, setMembers] = useState<FamilyMember[]>([]);
-  const [invite, setInvite] = useState<FamilyInvite | null>(null);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [selectedRelationship, setSelectedRelationship] = useState<Relationship>('grandparent');
   const [joinCode, setJoinCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,11 +51,11 @@ export default function FamilyPortal() {
         setMembers(data.members || []);
       }
     } catch {
-      // Offline - that's ok
+      // Offline
     }
   };
 
-  const createInvite = async (role: 'family' | 'friend' = 'family') => {
+  const createInvite = async () => {
     setLoading(true);
     setError('');
     try {
@@ -57,11 +65,11 @@ export default function FamilyPortal() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ relationship: selectedRelationship }),
       });
       const data = await res.json();
       if (res.ok) {
-        setInvite(data.invite);
+        setInviteCode(data.invite.code);
       } else {
         setError(data.error || 'Failed to create invite');
       }
@@ -72,36 +80,33 @@ export default function FamilyPortal() {
   };
 
   const handleCopy = async () => {
-    if (!invite) return;
-    const url = `${window.location.origin}/join/${invite.code}`;
+    if (!inviteCode) return;
+    const url = `${window.location.origin}/join/${inviteCode}`;
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
       const input = document.createElement('input');
       input.value = url;
       document.body.appendChild(input);
       input.select();
       document.execCommand('copy');
       document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = async () => {
-    if (!invite || !navigator.share) return;
-    const url = `${window.location.origin}/join/${invite.code}`;
+    if (!inviteCode) return;
+    const url = `${window.location.origin}/join/${inviteCode}`;
     try {
       await navigator.share({
         title: 'Join our Living Legacy family!',
-        text: `${user?.name} invited you to view their baby journal on Living Legacy. Use invite code: ${invite.code}`,
+        text: `${user?.name} invited you to view their baby journal on Living Legacy. Use invite code: ${inviteCode}`,
         url,
       });
     } catch {
-      // User cancelled share
+      // User cancelled
     }
   };
 
@@ -135,10 +140,18 @@ export default function FamilyPortal() {
 
   const getRoleIcon = (role: string) => {
     switch (role) {
+      case 'keeper': return <Baby size={14} className="text-violet-500" />;
       case 'parent': return <Crown size={14} className="text-amber-500" />;
-      case 'family': return <Heart size={14} className="text-rose-500" />;
-      default: return <Users size={14} className="text-violet-500" />;
+      default: return <Heart size={14} className="text-rose-500" />;
     }
+  };
+
+  const getRelationshipLabel = (member: FamilyMember) => {
+    if (member.relationship && RELATIONSHIP_LABELS[member.relationship]) {
+      return RELATIONSHIP_LABELS[member.relationship];
+    }
+    if (member.role === 'keeper') return 'Memory Keeper';
+    return 'Family';
   };
 
   return (
@@ -172,21 +185,36 @@ export default function FamilyPortal() {
           Create an invite link to share your baby's public journal entries and photos with loved ones.
         </p>
 
-        {!invite ? (
-          <div className="flex gap-2">
+        {!inviteCode ? (
+          <div className="space-y-3">
+            {/* Relationship Picker */}
+            <div>
+              <p className="mb-2 text-xs font-medium text-gray-500 dark:text-gray-400">
+                They are baby's...
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {RELATIONSHIPS.map((rel) => (
+                  <button
+                    key={rel}
+                    onClick={() => setSelectedRelationship(rel)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                      selectedRelationship === rel
+                        ? 'bg-rose-500 text-white shadow-sm'
+                        : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:ring-gray-600'
+                    }`}
+                  >
+                    {RELATIONSHIP_LABELS[rel]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <button
-              onClick={() => createInvite('family')}
+              onClick={createInvite}
               disabled={loading}
-              className="flex-1 rounded-xl bg-rose-500 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-rose-600 disabled:opacity-40 active:scale-[0.98]"
+              className="w-full rounded-xl bg-rose-500 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-rose-600 disabled:opacity-40 active:scale-[0.98]"
             >
-              {loading ? 'Creating...' : 'Invite Family'}
-            </button>
-            <button
-              onClick={() => createInvite('friend')}
-              disabled={loading}
-              className="flex-1 rounded-xl bg-violet-500 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-violet-600 disabled:opacity-40 active:scale-[0.98]"
-            >
-              {loading ? 'Creating...' : 'Invite Friend'}
+              {loading ? 'Creating...' : `Create Invite for ${RELATIONSHIP_LABELS[selectedRelationship]}`}
             </button>
           </div>
         ) : (
@@ -194,10 +222,10 @@ export default function FamilyPortal() {
             <div className="rounded-xl bg-gray-50 p-3 dark:bg-gray-700">
               <p className="mb-1 text-xs text-gray-500 dark:text-gray-400">Invite Code</p>
               <p className="font-mono text-lg font-bold tracking-wider text-gray-800 dark:text-white">
-                {invite.code}
+                {inviteCode}
               </p>
               <p className="mt-1 text-xs text-gray-400">
-                Expires in 7 days
+                For: {RELATIONSHIP_LABELS[selectedRelationship]} &middot; Expires in 7 days
               </p>
             </div>
             <div className="flex gap-2">
@@ -219,10 +247,10 @@ export default function FamilyPortal() {
               )}
             </div>
             <button
-              onClick={() => setInvite(null)}
+              onClick={() => setInviteCode(null)}
               className="w-full text-center text-xs text-gray-400 hover:text-gray-600"
             >
-              Create new invite
+              Create another invite
             </button>
           </div>
         )}
@@ -298,7 +326,7 @@ export default function FamilyPortal() {
                 <p className="text-sm font-medium text-gray-800 dark:text-white">
                   {user?.name} (You)
                 </p>
-                <p className="text-xs text-gray-500">Parent</p>
+                <p className="text-xs text-gray-500">Memory Keeper</p>
               </div>
             </div>
 
@@ -314,7 +342,7 @@ export default function FamilyPortal() {
                   <p className="text-sm font-medium text-gray-800 dark:text-white">
                     {member.name}
                   </p>
-                  <p className="text-xs capitalize text-gray-500">{member.role}</p>
+                  <p className="text-xs text-gray-500">{getRelationshipLabel(member)}</p>
                 </div>
               </div>
             ))}

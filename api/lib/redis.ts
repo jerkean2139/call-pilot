@@ -23,6 +23,8 @@ export const keys = {
   family: (userId: string) => `family:${userId}`,
   familyMembers: (userId: string) => `family_members:${userId}`,
   invite: (code: string) => `invite:${code}`,
+  keeperInvite: (phone: string) => `keeper_invite:${phone}`,
+  allKeepers: () => `all_keepers`,
   sharedEntries: (userId: string) => `shared:${userId}`,
   sharedEntry: (userId: string, entryId: string) => `shared:${userId}:${entryId}`,
 };

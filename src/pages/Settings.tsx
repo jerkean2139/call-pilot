@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Save, Download, Upload, Monitor, Moon, Sun, Bell, Users, LogOut } from 'lucide-react';
+import { ArrowLeft, Camera, Save, Download, Upload, Monitor, Moon, Sun, Bell, Users, LogOut, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBabyContext } from '../context/BabyContext';
 import { useAuth } from '../context/AuthContext';
@@ -13,7 +13,7 @@ import { useTheme } from '../context/ThemeContext';
 export default function Settings() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, isSuperAdmin } = useAuth();
   const { baby, babies, saveBaby, switchBaby, entries, milestones, growthRecords } = useBabyContext();
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
@@ -466,6 +466,25 @@ export default function Settings() {
           </button>
         </div>
       </div>
+
+      {/* Admin Dashboard (super admin only) */}
+      {isSuperAdmin && (
+        <button
+          onClick={() => navigate('/admin')}
+          className="flex w-full items-center gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-amber-100 transition-all hover:bg-amber-50 dark:bg-gray-800 dark:ring-amber-900/30"
+        >
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+            <Shield size={18} className="text-amber-500" />
+          </div>
+          <div className="flex-1 text-left">
+            <h2 className="font-heading text-sm font-semibold text-gray-700 dark:text-gray-200">
+              Admin Dashboard
+            </h2>
+            <p className="text-[10px] text-gray-400">Manage Memory Keepers</p>
+          </div>
+          <ArrowLeft size={16} className="rotate-180 text-gray-300" />
+        </button>
+      )}
 
       {/* Family Portal */}
       <button
