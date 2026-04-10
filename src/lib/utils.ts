@@ -6,130 +6,60 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function generateId(): string {
-  return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
+export function formatTimestamp(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
 
-export function formatShortDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-export function calculateAge(dateOfBirth: string): {
-  years: number;
-  months: number;
-  days: number;
-  totalDays: number;
-  display: string;
-} {
-  const dob = new Date(dateOfBirth);
-  const now = new Date();
-  const totalDays = Math.floor(
-    (now.getTime() - dob.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  let years = now.getFullYear() - dob.getFullYear();
-  let months = now.getMonth() - dob.getMonth();
-  let days = now.getDate() - dob.getDate();
-
-  if (days < 0) {
-    months--;
-    const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    days += prevMonth.getDate();
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }
-  if (months < 0) {
-    years--;
-    months += 12;
-  }
-
-  let display: string;
-  if (years > 0) {
-    display = `${years} year${years > 1 ? 's' : ''}${months > 0 ? `, ${months} mo` : ''}`;
-  } else if (months > 0) {
-    display = `${months} month${months > 1 ? 's' : ''}${days > 0 ? `, ${days} day${days > 1 ? 's' : ''}` : ''}`;
-  } else {
-    display = `${days} day${days !== 1 ? 's' : ''} old`;
-  }
-
-  return { years, months, days, totalDays, display };
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-export function getAgeInMonths(dateOfBirth: string): number {
-  const dob = new Date(dateOfBirth);
-  const now = new Date();
-  return (
-    (now.getFullYear() - dob.getFullYear()) * 12 +
-    (now.getMonth() - dob.getMonth())
-  );
+export function formatTime(date: Date | number): string {
+  const d = typeof date === 'number' ? new Date(date) : date;
+  return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-export function getCategoryColor(category: string): string {
-  const colors: Record<string, string> = {
-    motor: 'bg-blue-100 text-blue-700',
-    cognitive: 'bg-purple-100 text-purple-700',
-    social: 'bg-pink-100 text-pink-700',
-    language: 'bg-amber-100 text-amber-700',
-    feeding: 'bg-green-100 text-green-700',
-    sleep: 'bg-indigo-100 text-indigo-700',
-    play: 'bg-orange-100 text-orange-700',
-    milestone: 'bg-yellow-100 text-yellow-700',
-    daily: 'bg-slate-100 text-slate-700',
-    health: 'bg-red-100 text-red-700',
-    first: 'bg-rose-100 text-rose-700',
-    outing: 'bg-teal-100 text-teal-700',
-    funny: 'bg-amber-100 text-amber-700',
-    memory: 'bg-violet-100 text-violet-700',
+export function formatDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return `${hours}h ${remaining}m`;
+}
+
+export function truncate(str: string, maxLen: number): string {
+  if (str.length <= maxLen) return str;
+  return str.slice(0, maxLen - 1) + '\u2026';
+}
+
+export function debounce<T extends (...args: unknown[]) => void>(
+  fn: T,
+  delay: number,
+): (...args: Parameters<T>) => void {
+  let timer: ReturnType<typeof setTimeout>;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
   };
-  return colors[category] || 'bg-gray-100 text-gray-700';
 }
 
-export function getCategoryEmoji(category: string): string {
-  const emojis: Record<string, string> = {
-    motor: '🏃',
-    cognitive: '🧠',
-    social: '👋',
-    language: '💬',
-    feeding: '🍼',
-    sleep: '😴',
-    play: '🎮',
-    milestone: '⭐',
-    daily: '📝',
-    health: '❤️',
-    first: '🎉',
-    outing: '🌳',
-    funny: '😂',
-    memory: '💭',
-  };
-  return emojis[category] || '📌';
+export function copyToClipboard(text: string): Promise<void> {
+  return navigator.clipboard.writeText(text);
 }
 
-export async function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-export function getMoodEmoji(mood?: string): string {
-  const moods: Record<string, string> = {
-    happy: '😊',
-    sleepy: '😴',
-    fussy: '😤',
-    calm: '😌',
-    playful: '🤗',
-  };
-  return mood ? moods[mood] || '' : '';
+export function downloadFile(content: string, filename: string, mimeType = 'text/plain') {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }

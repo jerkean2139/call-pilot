@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-cp-bg text-cp-text font-sans antialiased;
+    margin: 0;
+    padding: 0;
+    min-width: 320px;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-cp-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-cp-text-muted;
+  }
+}
+
+@layer components {
+  .cp-card {
+    @apply bg-cp-surface border border-cp-border rounded-lg;
+  }
+
+  .cp-btn {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5
+           text-sm font-medium rounded-md transition-colors
+           focus:outline-none focus:ring-2 focus:ring-cp-accent focus:ring-offset-1 focus:ring-offset-cp-bg;
+  }
+
+  .cp-btn-primary {
+    @apply cp-btn bg-cp-accent text-white hover:bg-cp-accent-hover;
+  }
+
+  .cp-btn-ghost {
+    @apply cp-btn text-cp-text-muted hover:text-cp-text hover:bg-cp-surface-hover;
+  }
+
+  .cp-btn-danger {
+    @apply cp-btn text-cp-danger hover:bg-cp-danger/10;
+  }
+
+  .cp-input {
+    @apply w-full bg-cp-surface border border-cp-border rounded-md px-3 py-2
+           text-sm text-cp-text placeholder:text-cp-text-muted
+           focus:outline-none focus:ring-2 focus:ring-cp-accent focus:border-transparent;
+  }
+
+  .cp-kbd {
+    @apply inline-flex items-center justify-center min-w-[1.5rem] h-6
+           px-1.5 text-xs font-mono font-medium
+           bg-cp-surface-hover border border-cp-border rounded
+           text-cp-text-muted;
+  }
+
+  .cp-badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full;
+  }
+}

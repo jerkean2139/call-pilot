@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\Jeremy\\\\call-pilot\")",
+      "Bash(cp -r \"C:\\\\Users\\\\Jeremy\\\\call_pilot\\\\.claude\\\\worktrees\\\\sleepy-gould\\\\.\" \"C:\\\\Users\\\\Jeremy\\\\call-pilot\\\\\" 2>&1 | head -5)",
+      "Bash(mkdir -p /c/Users/Jeremy/call-pilot)",
+      "Bash(cp -r /c/Users/Jeremy/call_pilot/.claude/worktrees/sleepy-gould/. /c/Users/Jeremy/call-pilot/)"
+    ]
+  }
+}

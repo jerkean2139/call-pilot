@@ -1,47 +1,56 @@
-# Living Legacy - Baby Journal PWA
+# CallPilot Live — Repository Operating Instructions
 
-## Project Context
-Living Legacy is a mobile-first Progressive Web App for parents to capture and cherish every moment of their baby's journey. It features journaling, milestone tracking, growth charts, and a beautiful timeline view.
+## Product
+A live meeting copilot Chrome extension that shows near-real-time transcript,
+lets users tag important moments instantly, continuously extracts sales
+intelligence, and generates structured post-call notes.
 
 ## Tech Stack
+- Chrome Extension (Manifest V3)
 - React 18 + TypeScript + Vite
-- Tailwind CSS (warm colors: rose, amber, violet palette)
-- Framer Motion for animations
-- Recharts for growth charts
+- Tailwind CSS (dark theme, Indigo accent)
+- Framer Motion for subtle animations
 - Lucide React for icons
-- IndexedDB for offline-first local storage
-- PWA with service worker for offline support
-- Fonts: Montserrat (headings), Open Sans (body)
+- IndexedDB (via `idb`) for local-first storage
+- CRXJS Vite Plugin for extension dev/build
+- Font: Inter
 
-## Design Principles
-- Mobile-first, thumb-zone friendly
-- Warm, nurturing aesthetic (cream backgrounds, soft rounded cards)
-- Offline-first — all data stored in IndexedDB
-- No backend required — fully client-side
-- PWA installable on home screen
+## Architecture
+- `src/background/` — MV3 service worker (session state, message relay)
+- `src/content/` — Content script (meeting detection, caption observation)
+- `src/sidepanel/` — React app rendered in Chrome side panel
+- `src/components/` — UI components (TranscriptPanel, TagBar, InsightsPanel, OutputPanel)
+- `src/hooks/` — React hooks (useSession, useKeyboardShortcuts)
+- `src/lib/` — Storage, utilities, output generation
+- `src/shared/` — Types, constants, messaging utilities
 
-## Key Routes
-- `/` — Dashboard (baby overview, quick actions, recent entries)
-- `/journal` — Journal entries list with search and category filter
-- `/journal/new` — Create new journal entry
-- `/journal/:id` — View journal entry detail
-- `/milestones` — Milestone tracker with category tabs
-- `/growth` — Growth charts (weight, height, head circumference)
-- `/timeline` — Chronological timeline of all events
-- `/settings` — Baby profile, export/import data
+## Working Rules
+- Stay inside MVP scope (transcript, tags, insights, output, export)
+- Do not add backend/API until Phase 2
+- Respect file ownership boundaries
+- Prefer small, verifiable changes
+- Keyboard-first UX (keys 1-6 for tags, M for note)
+- No blocking modals during active calls
+- All data stored locally in IndexedDB
 
-## Data Storage
-All data is stored in IndexedDB with four object stores:
-- `babies` — Baby profiles
-- `journal` — Journal entries (with photo support via base64)
-- `milestones` — Achieved milestones
-- `growth` — Growth measurements
+## Key Routes / Views
+Side panel tabs:
+- **Transcript** — Live transcript with search, auto-scroll, marker highlights
+- **Insights** — AI-extracted intelligence grouped by category
+- **Output** — Post-call summary generation and export
+- **Docs** — Framework document upload for context
 
-## Features
-- Onboarding flow for first-time setup
-- Journal with categories, moods, and photo attachments
-- 50+ developmental milestone templates organized by category
-- Growth tracking with interactive charts
-- Timeline view grouping events by month
-- Data export/import for backup
-- PWA offline support
+## Data Model
+Core entities in IndexedDB:
+- `calls` — Call sessions
+- `chunks` — Transcript chunks (timestamped, speaker-labeled)
+- `markers` — User tags (pain-point, objection, action-item, buying-signal, key-info, custom)
+- `insights` — AI-extracted intelligence with evidence references
+- `outputs` — Generated summaries, emails, CRM notes
+- `frameworks` — Uploaded context documents
+
+## Commands
+- `npm run dev` — Start Vite dev server with HMR
+- `npm run build` — Build extension to `dist/`
+- `npm test` — Run tests with Vitest
+- `npm run lint` — Lint with ESLint
