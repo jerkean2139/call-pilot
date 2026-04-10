@@ -7,8 +7,8 @@
     "sidePanel",
     "storage",
     "activeTab",
-    "tabCapture",
-    "tabs"
+    "tabs",
+    "alarms"
   ],
   "host_permissions": [
     "https://meet.google.com/*",
