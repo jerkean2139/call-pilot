@@ -1,12 +1,12 @@
-import type { ExtensionMessage, SessionState, TranscriptChunk, Marker } from '@/shared/types';
+import type { ExtensionMessage, SessionState, TranscriptChunk, Marker, Call } from '@/shared/types';
 
 /**
  * CallPilot Live — Background Service Worker
  *
  * Responsibilities:
- * - Manage call session lifecycle
+ * - Manage call session lifecycle (auto-start when content script detects a meeting)
  * - Relay messages between content script and side panel
- * - Buffer transcript chunks for extraction
+ * - Stamp transcript chunks with the active callId
  * - Coordinate storage flushes
  */
 
@@ -18,7 +18,7 @@ let sessionState: SessionState = {
   outputs: [],
 };
 
-// ─── Side Panel Setup ───
+// ─── Side Panel: open automatically when extension icon is clicked ───
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })
@@ -29,8 +29,42 @@ chrome.sidePanel
 chrome.runtime.onMessage.addListener(
   (msg: ExtensionMessage, sender, sendResponse) => {
     switch (msg.type) {
+
+      // Content script detected a meeting — auto-start a session if none active
+      case 'MEETING_DETECTED': {
+        const { platform, title, tabId } = msg.payload as {
+          platform: string;
+          title: string;
+          tabId: number;
+        };
+
+        if (!sessionState.call || sessionState.call.status === 'ended') {
+          const call: Call = {
+            id: `call-${Date.now()}`,
+            title: title || `${platform} call`,
+            startedAt: Date.now(),
+            status: 'active',
+            source: platform,
+          };
+          sessionState = {
+            call,
+            chunks: [],
+            markers: [],
+            insights: [],
+            outputs: [],
+          };
+          console.log(`[CallPilot BG] Auto-started session: ${call.id} (${platform})`);
+        }
+
+        // Reply with current callId so content script can stamp chunks
+        sendResponse({ callId: sessionState.call?.id ?? null });
+        broadcastState();
+        return true; // async response
+      }
+
+      // Side panel manually started a call
       case 'CALL_START': {
-        const call = msg.payload as SessionState['call'];
+        const call = msg.payload as Call;
         sessionState = {
           call,
           chunks: [],
@@ -39,7 +73,9 @@ chrome.runtime.onMessage.addListener(
           outputs: [],
         };
         broadcastState();
-        break;
+        // Reply with callId for any listening content scripts
+        sendResponse({ callId: call.id });
+        return true;
       }
 
       case 'CALL_END': {
@@ -54,17 +90,46 @@ chrome.runtime.onMessage.addListener(
         break;
       }
 
+      case 'CALL_PAUSE': {
+        if (sessionState.call) {
+          sessionState.call = { ...sessionState.call, status: 'paused' };
+          broadcastState();
+        }
+        break;
+      }
+
+      // Transcript chunk from content script — stamp with active callId
       case 'TRANSCRIPT_CHUNK': {
         const chunk = msg.payload as TranscriptChunk;
-        sessionState.chunks.push(chunk);
+
+        if (!sessionState.call || sessionState.call.status === 'ended') {
+          // No active session — drop silently (content script will re-request)
+          break;
+        }
+
+        const stamped: TranscriptChunk = {
+          ...chunk,
+          callId: sessionState.call.id,
+        };
+
+        // Deduplicate: skip if same text as the last chunk from same speaker
+        const last = sessionState.chunks[sessionState.chunks.length - 1];
+        if (last && last.speaker === stamped.speaker && last.text === stamped.text) {
+          break;
+        }
+
+        sessionState.chunks.push(stamped);
         broadcastState();
         break;
       }
 
       case 'ADD_MARKER': {
         const marker = msg.payload as Marker;
-        sessionState.markers.push(marker);
-        broadcastState();
+        if (sessionState.call) {
+          const stamped = { ...marker, callId: sessionState.call.id };
+          sessionState.markers.push(stamped);
+          broadcastState();
+        }
         break;
       }
 
@@ -85,9 +150,8 @@ chrome.runtime.onMessage.addListener(
       }
 
       case 'SESSION_STATE': {
-        // Request for current state
         sendResponse(sessionState);
-        return true; // async response
+        return true;
       }
 
       case 'PING': {
@@ -99,7 +163,6 @@ chrome.runtime.onMessage.addListener(
 );
 
 function broadcastState(): void {
-  // Broadcast to all extension views (side panel, popup, etc.)
   chrome.runtime.sendMessage({
     type: 'SESSION_STATE',
     payload: sessionState,
@@ -111,6 +174,6 @@ function broadcastState(): void {
 chrome.alarms.create('keep-alive', { periodInMinutes: 0.4 });
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'keep-alive') {
-    // Just keeping the service worker alive during active calls
+    // Intentional no-op — just keeping the worker alive
   }
 });
