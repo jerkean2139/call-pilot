@@ -163,11 +163,15 @@ chrome.runtime.onMessage.addListener(
 );
 
 function broadcastState(): void {
+  // Silently ignore "Could not establish connection" — side panel may not be open yet
   chrome.runtime.sendMessage({
     type: 'SESSION_STATE',
     payload: sessionState,
-  }).catch(() => {});
+  }).catch((_err) => {
+    // No active receivers — this is expected when side panel is closed
+  });
 }
+
 
 // ─── Keep-alive for MV3 service worker ───
 
