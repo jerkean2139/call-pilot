@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSession } from '@/hooks/useSession';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { CallHeader } from '@/components/CallHeader';
@@ -8,9 +8,11 @@ import { MarkersList } from '@/components/MarkersList';
 import { InsightsPanel } from '@/components/InsightsPanel';
 import { OutputPanel } from '@/components/OutputPanel';
 import { FrameworkUpload } from '@/components/FrameworkUpload';
+import { SettingsPanel } from '@/components/SettingsPanel';
 import { generateLocalOutput } from '@/lib/outputGenerator';
 import type { ViewTab } from '@/shared/types';
-import type { MarkerType, CallOutput } from '@/shared/types';
+import type { MarkerType, CallOutput, ExtractionStatus } from '@/shared/types';
+import { onMessage } from '@/shared/messaging';
 import { cn } from '@/lib/utils';
 import {
   MessageSquareText,
@@ -29,7 +31,25 @@ const TABS: { id: ViewTab | 'upload'; label: string; icon: typeof MessageSquareT
 export default function App() {
   const session = useSession();
   const [activeTab, setActiveTab] = useState<ViewTab | 'upload'>('transcript');
-  const [showNoteInput, setShowNoteInput] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [extraction, setExtraction] = useState<ExtractionStatus | null>(null);
+
+  useEffect(() => {
+    const cleanup = onMessage((msg) => {
+      if (msg.type === 'EXTRACTION_STATUS') {
+        setExtraction(msg.payload as ExtractionStatus);
+      }
+    });
+
+    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
+      chrome.runtime
+        .sendMessage({ type: 'EXTRACTION_STATUS' })
+        .then((status: ExtractionStatus) => status && setExtraction(status))
+        .catch(() => {});
+    }
+
+    return cleanup;
+  }, []);
 
   const handleMarkerShortcut = useCallback(
     (type: MarkerType, label: string) => {
@@ -38,9 +58,10 @@ export default function App() {
     [session],
   );
 
+  // M is the same tag as key 6, matching the HUD's hotkeys.
   const handleCustomMarker = useCallback(() => {
-    setShowNoteInput(true);
-  }, []);
+    session.addMarker('custom', 'Note');
+  }, [session]);
 
   useKeyboardShortcuts({
     onMarker: handleMarkerShortcut,
@@ -75,19 +96,25 @@ export default function App() {
         call={session.call}
         chunkCount={session.chunks.length}
         markerCount={session.markers.length}
+        settingsOpen={showSettings}
         onStartCall={handleStartCall}
         onEndCall={session.endCall}
+        onToggleSettings={() => setShowSettings((v) => !v)}
       />
 
       {/* Tab Navigation */}
       <div className="flex border-b border-cp-border bg-cp-surface">
         {TABS.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = activeTab === tab.id && !showSettings;
+          const badge = tab.id === 'insights' ? session.insights.length : 0;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => {
+                setActiveTab(tab.id);
+                setShowSettings(false);
+              }}
               className={cn(
                 'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors',
                 'border-b-2',
@@ -98,6 +125,11 @@ export default function App() {
             >
               <Icon className="w-3.5 h-3.5" />
               {tab.label}
+              {badge > 0 && (
+                <span className="cp-badge bg-cp-accent/15 text-cp-accent px-1.5 py-0 text-[10px]">
+                  {badge}
+                </span>
+              )}
             </button>
           );
         })}
@@ -105,7 +137,9 @@ export default function App() {
 
       {/* Tab Content */}
       <div className="flex-1 flex flex-col min-h-0 relative">
-        {activeTab === 'transcript' && (
+        {showSettings && <SettingsPanel status={extraction} />}
+
+        {!showSettings && activeTab === 'transcript' && (
           <>
             <TranscriptPanel
               chunks={session.chunks}
@@ -120,11 +154,11 @@ export default function App() {
           </>
         )}
 
-        {activeTab === 'insights' && (
-          <InsightsPanel insights={session.insights} />
+        {!showSettings && activeTab === 'insights' && (
+          <InsightsPanel insights={session.insights} status={extraction} />
         )}
 
-        {activeTab === 'output' && (
+        {!showSettings && activeTab === 'output' && (
           <OutputPanel
             outputs={session.outputs}
             chunks={session.chunks}
@@ -135,7 +169,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'upload' && <FrameworkUpload />}
+        {!showSettings && activeTab === 'upload' && <FrameworkUpload />}
       </div>
     </div>
   );

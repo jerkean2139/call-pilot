@@ -102,9 +102,43 @@ export const MARKER_SHORTCUTS: Record<string, { type: MarkerType; label: string;
   '6': { type: 'custom', label: 'Custom', key: '6' },
 };
 
+// ─── Settings ───
+
+export type EffortLevel = 'low' | 'medium' | 'high';
+
+export interface Settings {
+  apiKey: string;
+  model: string;
+  effort: EffortLevel;
+  extractionEnabled: boolean;
+  hudEnabled: boolean;
+}
+
+export interface HudPrefs {
+  x: number | null; // null = use the camera-line default position
+  y: number | null;
+  width: number;
+  height: number;
+  opacity: number;
+  collapsed: boolean;
+  showHighlights: boolean;
+}
+
+// ─── Extraction ───
+
+export type ExtractionPhase = 'idle' | 'running' | 'error' | 'disabled';
+
+export interface ExtractionStatus {
+  phase: ExtractionPhase;
+  lastRunAt?: number;
+  lastError?: string;
+  insightCount: number;
+}
+
 // ─── Message Types (Extension Messaging) ───
 
 export type MessageType =
+  | 'MEETING_DETECTED'
   | 'CALL_START'
   | 'CALL_END'
   | 'CALL_PAUSE'
@@ -117,6 +151,10 @@ export type MessageType =
   | 'REQUEST_SUMMARY'
   | 'SUMMARY_READY'
   | 'SESSION_STATE'
+  | 'SETTINGS_CHANGED'
+  | 'EXTRACTION_STATUS'
+  | 'HUD_SYNC'
+  | 'TOGGLE_HUD'
   | 'PING';
 
 export interface ExtensionMessage {

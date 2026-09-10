@@ -14,7 +14,8 @@
     "https://meet.google.com/*",
     "https://zoom.us/*",
     "https://*.zoom.us/*",
-    "https://teams.microsoft.com/*"
+    "https://teams.microsoft.com/*",
+    "https://api.anthropic.com/*"
   ],
   "background": {
     "service_worker": "src/background/index.ts",

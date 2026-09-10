@@ -15,7 +15,17 @@
  * Teams:       More → Language and speech → Turn on live captions
  */
 
-import type { TranscriptChunk } from '@/shared/types';
+import type {
+  TranscriptChunk,
+  Marker,
+  MarkerType,
+  Call,
+  Insight,
+  ExtensionMessage,
+} from '@/shared/types';
+import { mountHud, type HudHandle } from './hud';
+import { getSettings, saveSettings } from '@/lib/settings';
+import { generateId } from '@/lib/utils';
 
 let platform: string | null = null;
 let activeCallId: string | null = null;
@@ -25,6 +35,7 @@ let bodyObserver: MutationObserver | null = null;
 let chunkCounter = 0;
 let lastChunkText = '';
 let lastChunkSpeaker = '';
+let hud: HudHandle | null = null;
 
 // ─── Platform Detection ───
 
@@ -83,12 +94,82 @@ function notifyMeetingDetected(): void {
       callStartTime = Date.now();
       console.log(`[CallPilot] Session active: ${activeCallId}`);
       startCaptionObserver();
+      void ensureHud();
     }
   }).catch(() => {
     // Background not ready yet — retry in a moment
     setTimeout(notifyMeetingDetected, 2000);
   });
 }
+
+// ─── Heads-Up Display ───
+
+async function ensureHud(): Promise<void> {
+  if (hud) return;
+
+  const settings = await getSettings();
+  if (!settings.hudEnabled) return;
+
+  hud = await mountHud({
+    onTag: (type, label) => addMarker(type, label),
+    onClose: () => {
+      hud?.destroy();
+      hud = null;
+      void saveSettings({ hudEnabled: false });
+    },
+  });
+
+  if (activeCallId && callStartTime) {
+    hud.setCall({
+      id: activeCallId,
+      title: document.title,
+      startedAt: callStartTime,
+      status: 'active',
+      source: platform ?? 'unknown',
+    });
+  }
+}
+
+function addMarker(type: MarkerType, label: string): void {
+  if (!activeCallId || !callStartTime) return;
+
+  const marker: Marker = {
+    id: generateId(),
+    callId: activeCallId,
+    type,
+    label,
+    timestamp: Date.now() - callStartTime,
+    createdAt: Date.now(),
+  };
+
+  chrome.runtime.sendMessage({ type: 'ADD_MARKER', payload: marker }).catch(() => {});
+}
+
+chrome.runtime.onMessage.addListener((msg: ExtensionMessage) => {
+  if (msg.type === 'HUD_SYNC') {
+    const { call, insights } = msg.payload as { call: Call | null; insights: Insight[] };
+    hud?.setCall(call);
+    hud?.setInsights(insights);
+  }
+
+  if (msg.type === 'TOGGLE_HUD') {
+    if (hud) {
+      hud.destroy();
+      hud = null;
+    } else {
+      void ensureHud();
+    }
+  }
+
+  if (msg.type === 'SETTINGS_CHANGED') {
+    const settings = msg.payload as { hudEnabled: boolean };
+    if (settings.hudEnabled && !hud) void ensureHud();
+    if (!settings.hudEnabled && hud) {
+      hud.destroy();
+      hud = null;
+    }
+  }
+});
 
 // ─── Caption Observer Dispatch ───
 
@@ -289,6 +370,9 @@ function emitChunk(speaker: string, text: string): void {
     createdAt: Date.now(),
   };
 
+  // Render locally first — the HUD should never wait on a round trip.
+  hud?.addLine(chunk);
+
   chrome.runtime.sendMessage({
     type: 'TRANSCRIPT_CHUNK',
     payload: chunk,
@@ -318,6 +402,7 @@ function pollForMeeting(): void {
 window.addEventListener('beforeunload', () => {
   captionObserver?.disconnect();
   bodyObserver?.disconnect();
+  hud?.destroy();
 
   if (activeCallId) {
     chrome.runtime.sendMessage({ type: 'CALL_END' }).catch(() => {});

@@ -15,11 +15,12 @@ import {
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
-import type { Insight, InsightCategory } from '@/shared/types';
+import type { Insight, InsightCategory, ExtractionStatus } from '@/shared/types';
 import { cn } from '@/lib/utils';
 
 interface InsightsPanelProps {
   insights: Insight[];
+  status?: ExtractionStatus | null;
 }
 
 const CATEGORY_META: Record<
@@ -55,7 +56,7 @@ const CATEGORY_ORDER: InsightCategory[] = [
   'personal',
 ];
 
-export function InsightsPanel({ insights }: InsightsPanelProps) {
+export function InsightsPanel({ insights, status }: InsightsPanelProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(CATEGORY_ORDER),
   );
@@ -78,16 +79,33 @@ export function InsightsPanel({ insights }: InsightsPanelProps) {
   }
 
   if (insights.length === 0) {
+    const blocked = status?.phase === 'error' || status?.phase === 'disabled';
+
     return (
       <div className="flex-1 flex items-center justify-center px-6">
         <div className="text-center">
           <Target className="w-8 h-8 text-cp-text-muted mx-auto mb-2 opacity-40" />
-          <p className="text-cp-text-muted text-sm">
-            Insights will appear here as the conversation progresses
-          </p>
-          <p className="text-cp-text-muted text-xs mt-1 opacity-60">
-            Extracted every ~20 seconds during active calls
-          </p>
+          {blocked ? (
+            <>
+              <p className="text-cp-warning text-sm">
+                {status?.phase === 'disabled'
+                  ? 'Live extraction is turned off'
+                  : 'Extraction is not running'}
+              </p>
+              <p className="text-cp-text-muted text-xs mt-1 leading-relaxed">
+                {status?.lastError ?? 'Turn it back on in settings.'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-cp-text-muted text-sm">
+                Insights will appear here as the conversation progresses
+              </p>
+              <p className="text-cp-text-muted text-xs mt-1 opacity-60">
+                Extracted every ~20 seconds during active calls
+              </p>
+            </>
+          )}
         </div>
       </div>
     );
