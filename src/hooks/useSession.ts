@@ -132,22 +132,8 @@ export function useSession() {
     storage.deleteMarker(markerId);
   }, []);
 
-  const addOutput = useCallback(
-    (type: CallOutput['type'], content: string) => {
-      if (!call) return;
-      const output: CallOutput = {
-        id: generateId(),
-        callId: call.id,
-        type,
-        content,
-        generatedAt: Date.now(),
-      };
-      setOutputs((prev) => [...prev, output]);
-      storage.saveOutput(output);
-      return output;
-    },
-    [call],
-  );
+  // Outputs are written by the background worker, which owns the API key, and
+  // arrive here through the SESSION_STATE broadcast like everything else.
 
   // ─── Session restore ───
 
@@ -177,7 +163,6 @@ export function useSession() {
     addChunk,
     addMarker,
     removeMarker,
-    addOutput,
     restoreFromStorage,
     setInsights,
   };

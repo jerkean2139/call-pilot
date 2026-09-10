@@ -89,6 +89,14 @@ export interface CallOutput {
   type: 'executive-summary' | 'categorized-notes' | 'follow-up-email' | 'crm-note';
   content: string;
   generatedAt: number;
+  /** Whether a model wrote this or it fell back to the local templates. */
+  generatedBy?: 'ai' | 'local';
+}
+
+export interface OutputResult {
+  output: CallOutput;
+  /** Set when the local templates stood in for the model, and why. */
+  fallbackReason?: string;
 }
 
 // ─── Marker Shortcuts ───

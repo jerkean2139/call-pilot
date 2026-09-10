@@ -9,9 +9,13 @@ import { InsightsPanel } from '@/components/InsightsPanel';
 import { OutputPanel } from '@/components/OutputPanel';
 import { FrameworkUpload } from '@/components/FrameworkUpload';
 import { SettingsPanel } from '@/components/SettingsPanel';
-import { generateLocalOutput } from '@/lib/outputGenerator';
 import type { ViewTab } from '@/shared/types';
-import type { MarkerType, CallOutput, ExtractionStatus } from '@/shared/types';
+import type {
+  MarkerType,
+  CallOutput,
+  ExtractionStatus,
+  OutputResult,
+} from '@/shared/types';
 import { onMessage } from '@/shared/messaging';
 import { cn } from '@/lib/utils';
 import {
@@ -79,15 +83,22 @@ export default function App() {
     session.startCall(title);
   };
 
-  const handleGenerateOutput = (type: CallOutput['type']) => {
-    const content = generateLocalOutput(
-      type,
-      session.chunks,
-      session.markers,
-      session.insights,
-    );
-    session.addOutput(type, content);
-  };
+  // The background worker owns every API call, so the key lives in one place.
+  // Outputs come back through the normal SESSION_STATE broadcast; the result
+  // here only reports how it was written.
+  const handleGenerateOutput = useCallback(
+    async (type: CallOutput['type']): Promise<OutputResult> => {
+      const result = await chrome.runtime.sendMessage({
+        type: 'REQUEST_SUMMARY',
+        payload: { type },
+      });
+
+      if (!result) throw new Error('Background worker did not respond');
+      if (result.error) throw new Error(result.error);
+      return result as OutputResult;
+    },
+    [],
+  );
 
   return (
     <div className="h-screen flex flex-col bg-cp-bg">

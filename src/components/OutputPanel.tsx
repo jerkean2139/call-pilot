@@ -8,9 +8,17 @@ import {
   Download,
   Check,
   Loader2,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
-import type { CallOutput, TranscriptChunk, Marker, Insight } from '@/shared/types';
-import { copyToClipboard, downloadFile, formatTimestamp } from '@/lib/utils';
+import type {
+  CallOutput,
+  TranscriptChunk,
+  Marker,
+  Insight,
+  OutputResult,
+} from '@/shared/types';
+import { cn, copyToClipboard, downloadFile, formatTimestamp } from '@/lib/utils';
 
 interface OutputPanelProps {
   outputs: CallOutput[];
@@ -18,7 +26,13 @@ interface OutputPanelProps {
   markers: Marker[];
   insights: Insight[];
   isActive: boolean;
-  onGenerateOutput: (type: CallOutput['type']) => void;
+  onGenerateOutput: (type: CallOutput['type']) => Promise<OutputResult>;
+}
+
+interface Notice {
+  type: CallOutput['type'];
+  kind: 'warn' | 'error';
+  text: string;
 }
 
 const OUTPUT_TYPES: { type: CallOutput['type']; label: string; icon: typeof FileText }[] = [
@@ -38,6 +52,7 @@ export function OutputPanel({
 }: OutputPanelProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
 
   const handleCopy = async (output: CallOutput) => {
     await copyToClipboard(output.content);
@@ -50,11 +65,28 @@ export function OutputPanel({
     downloadFile(output.content, `callpilot-${output.type}.${ext}`);
   };
 
-  const handleGenerate = (type: CallOutput['type']) => {
+  const handleGenerate = async (type: CallOutput['type']) => {
     setGenerating(type);
-    onGenerateOutput(type);
-    // Reset after a delay (actual generation is async)
-    setTimeout(() => setGenerating(null), 3000);
+    setNotice(null);
+
+    try {
+      const { fallbackReason } = await onGenerateOutput(type);
+      if (fallbackReason) {
+        setNotice({
+          type,
+          kind: 'warn',
+          text: `Assembled from the local template — ${fallbackReason}.`,
+        });
+      }
+    } catch (err) {
+      setNotice({
+        type,
+        kind: 'error',
+        text: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setGenerating(null);
+    }
   };
 
   // Quick export: raw transcript + markers
@@ -146,6 +178,14 @@ export function OutputPanel({
 
                   {existing ? (
                     <div className="flex items-center gap-1">
+                      {existing.generatedBy === 'local' && (
+                        <span
+                          className="cp-badge bg-cp-warning/15 text-cp-warning px-1.5 py-0 text-[9px]"
+                          title="Written from the local template, not by the model"
+                        >
+                          local
+                        </span>
+                      )}
                       <button
                         onClick={() => handleCopy(existing)}
                         className="cp-btn-ghost p-1"
@@ -164,6 +204,16 @@ export function OutputPanel({
                       >
                         <Download className="w-3.5 h-3.5" />
                       </button>
+                      <button
+                        onClick={() => handleGenerate(type)}
+                        disabled={isActive || isGenerating}
+                        className="cp-btn-ghost p-1 disabled:opacity-40"
+                        title="Rewrite"
+                      >
+                        <RefreshCw
+                          className={cn('w-3.5 h-3.5', isGenerating && 'animate-spin')}
+                        />
+                      </button>
                     </div>
                   ) : (
                     <button
@@ -179,6 +229,20 @@ export function OutputPanel({
                     </button>
                   )}
                 </div>
+
+                {notice?.type === type && (
+                  <div
+                    className={cn(
+                      'flex items-start gap-1.5 px-3 py-1.5 text-[10px] leading-relaxed border-t border-cp-border',
+                      notice.kind === 'error'
+                        ? 'text-cp-danger bg-cp-danger/10'
+                        : 'text-cp-warning bg-cp-warning/10',
+                    )}
+                  >
+                    <AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />
+                    <span>{notice.text}</span>
+                  </div>
+                )}
 
                 {existing && (
                   <div className="px-3 pb-2 border-t border-cp-border">

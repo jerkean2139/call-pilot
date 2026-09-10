@@ -41,6 +41,26 @@ The key is stored in `chrome.storage.local`, unencrypted, like any browser
 extension credential. Anyone with access to the browser profile can read it, so
 scope the key to this tool and revoke it if the machine is shared.
 
+## Post-call documents
+
+When a call ends, the Output tab writes four documents from the transcript, your
+tags, and the extracted insights: an executive summary, categorized notes, a
+follow-up email, and a structured CRM note.
+
+These are written by the model, not assembled from a template. The prompt holds
+it to what was actually said — no invented commitments, numbers, or names, and
+`[bracketed]` placeholders where a detail is genuinely missing rather than a
+plausible guess. Uploaded framework docs shape what it considers important and
+match your vocabulary, but are explicitly fenced off from being reported as
+things said on the call.
+
+The CRM note's factual fields (date, duration, participants) are filled in
+locally rather than asked of the model.
+
+**Without an API key** the old local templates still run, so the tab keeps
+working — the output is badged `local` and tells you why it fell back. Adding a
+key and pressing rewrite regenerates it properly.
+
 ## The HUD
 
 The overlay mounts on Meet, Zoom, and Teams once a call is detected.

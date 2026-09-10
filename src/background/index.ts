@@ -4,6 +4,8 @@ import type {
   TranscriptChunk,
   Marker,
   Call,
+  CallOutput,
+  OutputResult,
   ExtractionStatus,
   Framework,
 } from '@/shared/types';
@@ -14,6 +16,8 @@ import {
   STORAGE_KEYS,
 } from '@/shared/constants';
 import { extractInsights, mergeInsights } from '@/lib/insightExtractor';
+import { writeOutput } from '@/lib/outputWriter';
+import { generateLocalOutput } from '@/lib/outputGenerator';
 import { getSettings } from '@/lib/settings';
 import * as storage from '@/lib/storage';
 
@@ -224,6 +228,11 @@ async function handleMessage(
       return { ok: true };
     }
 
+    case 'REQUEST_SUMMARY': {
+      const { type } = msg.payload as { type: CallOutput['type'] };
+      return writeCallOutput(type);
+    }
+
     case 'SETTINGS_CHANGED': {
       broadcastState();
       return { ok: true };
@@ -315,6 +324,65 @@ async function maybeExtract(force = false): Promise<void> {
   } finally {
     extractionInFlight = false;
   }
+}
+
+// ─── Post-call Writing ───
+
+async function writeCallOutput(type: CallOutput['type']): Promise<OutputResult> {
+  const call = sessionState.call;
+  if (!call) throw new Error('No call to write about');
+  if (sessionState.chunks.length === 0) throw new Error('No transcript to write from');
+
+  const settings = await getSettings();
+  const frameworks = await loadFrameworks();
+
+  let content: string;
+  let generatedBy: 'ai' | 'local';
+  let fallbackReason: string | undefined;
+
+  try {
+    if (!settings.apiKey) throw new Error('no Anthropic API key configured');
+
+    content = await writeOutput({
+      type,
+      call,
+      chunks: sessionState.chunks,
+      markers: sessionState.markers,
+      insights: sessionState.insights,
+      frameworks,
+      settings,
+    });
+    generatedBy = 'ai';
+  } catch (err) {
+    // The local templates still assemble something useful from what was
+    // captured, so a missing key or a failed call degrades rather than blocks —
+    // but the caller is told which one it got.
+    console.warn('[CallPilot BG] Falling back to local output:', err);
+    content = generateLocalOutput(
+      type,
+      sessionState.chunks,
+      sessionState.markers,
+      sessionState.insights,
+    );
+    generatedBy = 'local';
+    fallbackReason = err instanceof Error ? err.message : String(err);
+  }
+
+  const output: CallOutput = {
+    id: `output-${Date.now()}`,
+    callId: call.id,
+    type,
+    content,
+    generatedAt: Date.now(),
+    generatedBy,
+  };
+
+  sessionState.outputs = [...sessionState.outputs.filter((o) => o.type !== type), output];
+  await storage.saveOutput(output);
+  await persistSession();
+  broadcastState();
+
+  return { output, fallbackReason };
 }
 
 function setExtractionStatus(patch: Partial<ExtractionStatus>): void {

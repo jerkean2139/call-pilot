@@ -9,7 +9,10 @@ export const MIN_NEW_CHUNKS_FOR_EXTRACTION = 3;
 export const MAX_KNOWN_INSIGHTS_IN_PROMPT = 60;
 
 export const DEFAULT_MODEL = 'claude-opus-5';
+/** Live extraction runs against the clock; depth is the user's to trade away. */
 export const DEFAULT_EFFORT = 'low';
+/** Post-call writing runs once, after the call — quality beats latency. */
+export const OUTPUT_EFFORT = 'high';
 
 export const AVAILABLE_MODELS = [
   { id: 'claude-opus-5', label: 'Opus 5 — most capable' },
