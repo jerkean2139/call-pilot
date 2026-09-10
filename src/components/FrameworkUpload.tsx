@@ -56,7 +56,7 @@ export function FrameworkUpload() {
       setFrameworks((prev) => [...prev, framework]);
       setStatus('success');
       setTimeout(() => setStatus('idle'), 2000);
-    } catch (err) {
+    } catch {
       setError('Failed to process file');
       setStatus('error');
     }

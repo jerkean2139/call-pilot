@@ -41,13 +41,21 @@ export async function saveHudPrefs(patch: Partial<HudPrefs>): Promise<HudPrefs> 
   return next;
 }
 
+/**
+ * A corrupted blob falls back to defaults rather than throwing — settings are
+ * read on the render path, and an unreadable one must not take the panel down.
+ */
 async function readKey<T>(key: string): Promise<T | undefined> {
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    const result = await chrome.storage.local.get(key);
-    return result[key] as T | undefined;
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      const result = await chrome.storage.local.get(key);
+      return result[key] as T | undefined;
+    }
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : undefined;
+  } catch {
+    return undefined;
   }
-  const raw = localStorage.getItem(key);
-  return raw ? (JSON.parse(raw) as T) : undefined;
 }
 
 async function writeKey(key: string, value: unknown): Promise<void> {

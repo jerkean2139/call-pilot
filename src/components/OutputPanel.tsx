@@ -10,7 +10,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import type { CallOutput, TranscriptChunk, Marker, Insight } from '@/shared/types';
-import { cn, copyToClipboard, downloadFile, formatTimestamp } from '@/lib/utils';
+import { copyToClipboard, downloadFile, formatTimestamp } from '@/lib/utils';
 
 interface OutputPanelProps {
   outputs: CallOutput[];

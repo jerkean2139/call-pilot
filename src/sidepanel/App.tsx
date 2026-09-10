@@ -31,7 +31,6 @@ const TABS: { id: ViewTab | 'upload'; label: string; icon: typeof MessageSquareT
 export default function App() {
   const session = useSession();
   const [activeTab, setActiveTab] = useState<ViewTab | 'upload'>('transcript');
-  const [showNoteInput, setShowNoteInput] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [extraction, setExtraction] = useState<ExtractionStatus | null>(null);
 
@@ -59,9 +58,10 @@ export default function App() {
     [session],
   );
 
+  // M is the same tag as key 6, matching the HUD's hotkeys.
   const handleCustomMarker = useCallback(() => {
-    setShowNoteInput(true);
-  }, []);
+    session.addMarker('custom', 'Note');
+  }, [session]);
 
   useKeyboardShortcuts({
     onMarker: handleMarkerShortcut,
