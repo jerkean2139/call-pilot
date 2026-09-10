@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, PhoneOff, Circle, Clock, Users } from 'lucide-react';
+import { Phone, PhoneOff, Circle, Clock, Settings as SettingsIcon } from 'lucide-react';
 import type { Call } from '@/shared/types';
 import { cn, formatDuration } from '@/lib/utils';
 
@@ -7,16 +7,20 @@ interface CallHeaderProps {
   call: Call | null;
   chunkCount: number;
   markerCount: number;
+  settingsOpen: boolean;
   onStartCall: () => void;
   onEndCall: () => void;
+  onToggleSettings: () => void;
 }
 
 export function CallHeader({
   call,
   chunkCount,
   markerCount,
+  settingsOpen,
   onStartCall,
   onEndCall,
+  onToggleSettings,
 }: CallHeaderProps) {
   const [elapsed, setElapsed] = useState(0);
 
@@ -84,6 +88,19 @@ export function CallHeader({
               End Call
             </button>
           ) : null}
+
+          <button
+            onClick={onToggleSettings}
+            aria-label="Settings"
+            className={cn(
+              'p-1.5 rounded-md transition-colors',
+              settingsOpen
+                ? 'text-cp-accent bg-cp-accent/10'
+                : 'text-cp-text-muted hover:text-cp-text hover:bg-cp-surface-hover',
+            )}
+          >
+            <SettingsIcon className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </div>
