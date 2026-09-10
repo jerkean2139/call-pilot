@@ -58,6 +58,23 @@ The overlay mounts on Meet, Zoom, and Teams once a call is detected.
 Scroll up in the transcript and a **jump to live** pill appears with a count of
 what you missed; click it to snap back to the bottom.
 
+### When captions don't show up
+
+CallPilot reads the meeting app's own captions, which means it depends on
+selectors that can stop matching when Meet, Zoom, or Teams change their markup.
+Rather than sitting there empty, the HUD says which of the two things went
+wrong:
+
+| Banner | Meaning |
+|--------|---------|
+| *"Turn on captions with…"* | The app has a captions control and it isn't on — the fix is yours, and the banner names the exact button for your platform |
+| *"CallPilot can't find the caption controls…"* | No caption panel **and** no captions control — the fix is ours, and the adapter selectors likely need updating |
+| *"Captions connected. Waiting for someone to speak."* | Working; the room is just quiet |
+
+CallPilot also re-attaches on its own when a meeting app re-renders and replaces
+the caption panel mid-call, which otherwise stops the transcript dead with no
+error anywhere.
+
 Tag hotkeys work while the meeting tab has focus — except when you're typing in
 a chat box or search field, where the keys go where you'd expect.
 

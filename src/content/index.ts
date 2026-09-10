@@ -24,14 +24,25 @@ import type {
   ExtensionMessage,
 } from '@/shared/types';
 import { mountHud, type HudHandle } from './hud';
+import {
+  classifyCaptions,
+  findCaptionToggle,
+  type CaptionPhase,
+} from './captionHealth';
+import { CaptionAttacher } from './captionObserver';
 import { getSettings, saveSettings } from '@/lib/settings';
 import { generateId } from '@/lib/utils';
+
+const HEALTH_INTERVAL_MS = 5_000;
 
 let platform: string | null = null;
 let activeCallId: string | null = null;
 let callStartTime: number | null = null;
-let captionObserver: MutationObserver | null = null;
 let bodyObserver: MutationObserver | null = null;
+let attacher: CaptionAttacher | null = null;
+let healthTimer: ReturnType<typeof setInterval> | undefined;
+let lastCaptionPhase: CaptionPhase | null = null;
+let chunksSeen = 0;
 let chunkCounter = 0;
 let lastChunkText = '';
 let lastChunkSpeaker = '';
@@ -127,6 +138,8 @@ async function ensureHud(): Promise<void> {
       status: 'active',
       source: platform ?? 'unknown',
     });
+    // Mounting is async, so the HUD missed any health report already made.
+    reportCaptionHealth();
   }
 }
 
@@ -171,51 +184,109 @@ chrome.runtime.onMessage.addListener((msg: ExtensionMessage) => {
   }
 });
 
-// ─── Caption Observer Dispatch ───
+// ─── Caption Adapters ───
+// One entry per meeting app: where its caption panel lives, and how to pull a
+// speaker and a line out of the nodes that appear inside it.
 
-function startCaptionObserver(): void {
-  if (captionObserver) return; // already watching
-
-  switch (platform) {
-    case 'google-meet':
-      startGoogleMeetObserver();
-      break;
-    case 'zoom':
-      startZoomObserver();
-      break;
-    case 'teams':
-      startTeamsObserver();
-      break;
-  }
+interface CaptionAdapter {
+  findContainer: () => Element | null;
+  extract: (node: HTMLElement) => void;
 }
 
-// ─── Google Meet Caption Observer ───
-// Enable captions: click the CC button in the bottom bar of the call
+const ADAPTERS: Record<string, CaptionAdapter> = {
+  'google-meet': {
+    // Enable captions: the CC button in the bottom bar of the call
+    findContainer: () =>
+      document.querySelector('[jsname="tgaKEf"]') ||
+      document.querySelector('.a4cQT') ||
+      document.querySelector('[class*="VbkSUe"]') ||
+      document.querySelector('[aria-label*="caption" i]'),
+    extract: extractGoogleMeetChunk,
+  },
+  zoom: {
+    // Enable: the "CC" / "Show Captions" button in the Zoom toolbar
+    findContainer: () =>
+      document.querySelector('.live-transcription') ||
+      document.querySelector('[class*="transcript-panel"]') ||
+      document.querySelector('.captions-box') ||
+      document.querySelector('[aria-label*="Transcript" i]') ||
+      document.querySelector('[id*="live-transcript"]'),
+    extract: extractZoomChunk,
+  },
+  teams: {
+    // Enable: More (…) → Language and speech → Turn on live captions
+    findContainer: () =>
+      document.querySelector('[data-tid="transcript-container"]') ||
+      document.querySelector('[class*="transcript"]') ||
+      document.querySelector('[id*="closed-captions"]') ||
+      document.querySelector('.caption-container') ||
+      document.querySelector('[aria-label*="captions" i]'),
+    extract: extractTeamsChunk,
+  },
+};
 
-function startGoogleMeetObserver(): void {
-  const findContainer = () =>
-    // Meet uses various class names — try multiple selectors
-    document.querySelector('[jsname="tgaKEf"]') ||
-    document.querySelector('.a4cQT') ||
-    document.querySelector('[class*="VbkSUe"]') ||
-    // Fallback: any element that looks like a captions panel
-    document.querySelector('[aria-label*="caption"]') ||
-    document.querySelector('[aria-label*="Caption"]');
+// ─── Caption Observer ───
 
-  const attach = () => {
-    const container = findContainer();
-    if (container) {
-      attachObserver(container, extractGoogleMeetChunk);
-      console.log('[CallPilot] Google Meet caption observer attached');
-    }
-  };
+function startCaptionObserver(): void {
+  // Reconnecting to a restarted background calls this again; without the guard
+  // each pass would leak another body observer and health timer.
+  if (attacher) return;
 
-  // Try immediately
-  attach();
+  const adapter = platform ? ADAPTERS[platform] : undefined;
+  if (!adapter) return;
 
-  // Also watch body for the container appearing (captions toggled mid-call)
-  bodyObserver = new MutationObserver(attach);
+  attacher = new CaptionAttacher(adapter.findContainer, adapter.extract);
+  syncAttachment();
+
+  // The caption panel appears when captions are switched on, and meeting apps
+  // re-render it out from under us, so keep watching the page for both.
+  bodyObserver = new MutationObserver(syncAttachment);
   bodyObserver.observe(document.body, { childList: true, subtree: true });
+
+  // A backstop for a panel swapped in without a body mutation we saw.
+  healthTimer = setInterval(() => {
+    syncAttachment();
+    reportCaptionHealth();
+  }, HEALTH_INTERVAL_MS);
+
+  reportCaptionHealth();
+}
+
+function syncAttachment(): void {
+  // 'unchanged' is the overwhelmingly common case — the body observer fires on
+  // every mutation the meeting app makes — so it must stay silent and cheap.
+  const outcome = attacher?.sync().outcome;
+  if (outcome === undefined || outcome === 'unchanged' || outcome === 'not-found') return;
+
+  console.log(
+    outcome === 'reattached'
+      ? '[CallPilot] Caption panel was replaced — reattached'
+      : `[CallPilot] Caption observer attached (${platform})`,
+  );
+  reportCaptionHealth();
+}
+
+// ─── Caption Health ───
+// Without this the failure mode is silence: an empty transcript looks the same
+// whether captions are off or our selectors stopped matching.
+
+function reportCaptionHealth(): void {
+  if (!callStartTime) return;
+
+  const status = classifyCaptions({
+    platform: platform ?? 'unknown',
+    containerAttached: attacher?.attached ?? false,
+    chunksSeen,
+    msInCall: Date.now() - callStartTime,
+    toggleFound: findCaptionToggle(),
+  });
+
+  hud?.setCaptionStatus(status);
+
+  if (status.phase !== lastCaptionPhase) {
+    lastCaptionPhase = status.phase;
+    console.log(`[CallPilot] Caption health: ${status.phase}`);
+  }
 }
 
 function extractGoogleMeetChunk(node: HTMLElement): void {
@@ -243,30 +314,6 @@ function extractGoogleMeetChunk(node: HTMLElement): void {
   emitChunk(speaker, text);
 }
 
-// ─── Zoom Web Caption Observer ───
-// Enable: click "CC" or "Live Transcript" button in the Zoom toolbar
-
-function startZoomObserver(): void {
-  const findContainer = () =>
-    document.querySelector('.live-transcription') ||
-    document.querySelector('[class*="transcript-panel"]') ||
-    document.querySelector('.captions-box') ||
-    document.querySelector('[aria-label*="Transcript"]') ||
-    document.querySelector('[id*="live-transcript"]');
-
-  const attach = () => {
-    const container = findContainer();
-    if (container) {
-      attachObserver(container, extractZoomChunk);
-      console.log('[CallPilot] Zoom caption observer attached');
-    }
-  };
-
-  attach();
-  bodyObserver = new MutationObserver(attach);
-  bodyObserver.observe(document.body, { childList: true, subtree: true });
-}
-
 function extractZoomChunk(node: HTMLElement): void {
   const text = node.textContent?.trim();
   if (!text || text.length < 3) return;
@@ -285,30 +332,6 @@ function extractZoomChunk(node: HTMLElement): void {
   emitChunk(speaker, body);
 }
 
-// ─── Microsoft Teams Caption Observer ───
-// Enable: click ... More → Language and speech → Turn on live captions
-
-function startTeamsObserver(): void {
-  const findContainer = () =>
-    document.querySelector('[data-tid="transcript-container"]') ||
-    document.querySelector('[class*="transcript"]') ||
-    document.querySelector('[id*="closed-captions"]') ||
-    document.querySelector('.caption-container') ||
-    document.querySelector('[aria-label*="captions"]');
-
-  const attach = () => {
-    const container = findContainer();
-    if (container) {
-      attachObserver(container, extractTeamsChunk);
-      console.log('[CallPilot] Teams caption observer attached');
-    }
-  };
-
-  attach();
-  bodyObserver = new MutationObserver(attach);
-  bodyObserver.observe(document.body, { childList: true, subtree: true });
-}
-
 function extractTeamsChunk(node: HTMLElement): void {
   const text = node.textContent?.trim();
   if (!text || text.length < 3) return;
@@ -323,32 +346,6 @@ function extractTeamsChunk(node: HTMLElement): void {
   const body = text.replace(speaker, '').replace(/^[:\s]+/, '').trim();
 
   emitChunk(speaker, body || text);
-}
-
-// ─── Shared Observer Attach ───
-
-function attachObserver(
-  container: Element,
-  extractor: (node: HTMLElement) => void,
-): void {
-  if (captionObserver) captionObserver.disconnect();
-
-  captionObserver = new MutationObserver((mutations) => {
-    for (const m of mutations) {
-      for (const node of m.addedNodes) {
-        if (node instanceof HTMLElement) extractor(node);
-      }
-      if (m.type === 'characterData' && m.target.parentElement) {
-        extractor(m.target.parentElement);
-      }
-    }
-  });
-
-  captionObserver.observe(container, {
-    childList: true,
-    subtree: true,
-    characterData: true,
-  });
 }
 
 // ─── Emit Chunk to Background ───
@@ -372,6 +369,8 @@ function emitChunk(speaker: string, text: string): void {
 
   // Render locally first — the HUD should never wait on a round trip.
   hud?.addLine(chunk);
+
+  if (++chunksSeen === 1) reportCaptionHealth(); // listening → flowing
 
   chrome.runtime.sendMessage({
     type: 'TRANSCRIPT_CHUNK',
@@ -400,8 +399,9 @@ function pollForMeeting(): void {
 // ─── Cleanup ───
 
 window.addEventListener('beforeunload', () => {
-  captionObserver?.disconnect();
+  attacher?.disconnect();
   bodyObserver?.disconnect();
+  clearInterval(healthTimer);
   hud?.destroy();
 
   if (activeCallId) {

@@ -7,6 +7,7 @@ import type {
   HudPrefs,
 } from '@/shared/types';
 import { MARKER_SHORTCUTS } from '@/shared/types';
+import type { CaptionStatus } from './captionHealth';
 import { getHudPrefs, saveHudPrefs } from '@/lib/settings';
 import { formatTimestamp } from '@/lib/utils';
 
@@ -134,6 +135,20 @@ const STYLES = `
 
 .body { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
 
+/* Caption trouble, stated where the transcript would be. */
+.banner {
+  display: none;
+  align-items: flex-start; gap: 6px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  font-size: 10.5px; line-height: 1.4;
+  border-bottom: 1px solid #2a2e3b;
+}
+.banner.show { display: flex; }
+.banner.info { background: rgba(99, 102, 241, 0.10); color: #a5b4fc; }
+.banner.warn { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }
+.banner svg { width: 12px; height: 12px; flex: 0 0 auto; margin-top: 1px; }
+
 /* The pill anchors to the transcript, not the panel — it must never cover the
    highlights list sitting below it. */
 .scroller { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
@@ -245,6 +260,8 @@ const ICONS = {
   close:
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+  alert:
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
 };
 
 export interface HudCallbacks {
@@ -256,6 +273,7 @@ export interface HudHandle {
   addLine: (chunk: TranscriptChunk) => void;
   setInsights: (insights: Insight[]) => void;
   setCall: (call: Call | null) => void;
+  setCaptionStatus: (status: CaptionStatus) => void;
   destroy: () => void;
 }
 
@@ -287,6 +305,7 @@ export async function mountHud(callbacks: HudCallbacks): Promise<HudHandle> {
       <button class="icon-btn" data-act="close" title="Hide HUD">${ICONS.close}</button>
     </div>
     <div class="body">
+      <div class="banner">${ICONS.alert}<span class="banner-text"></span></div>
       <div class="scroller">
         <div class="transcript"><div class="empty">Waiting for captions…<br>Turn on captions in the meeting to start.</div></div>
         <button class="jump">${ICONS.down}<span class="jump-label">Jump to live</span></button>
@@ -309,6 +328,8 @@ export async function mountHud(callbacks: HudCallbacks): Promise<HudHandle> {
   const dot = $<HTMLElement>('.dot');
   const elapsedEl = $<HTMLElement>('.elapsed');
   const transcript = $<HTMLElement>('.transcript');
+  const banner = $<HTMLElement>('.banner');
+  const bannerText = $<HTMLElement>('.banner-text');
   const jump = $<HTMLButtonElement>('.jump');
   const jumpLabel = $<HTMLElement>('.jump-label');
   const highlights = $<HTMLElement>('.highlights');
@@ -625,6 +646,23 @@ export async function mountHud(callbacks: HudCallbacks): Promise<HudHandle> {
     repin();
   }
 
+  function setCaptionStatus(status: CaptionStatus): void {
+    // 'ok' covers both flowing captions and an attached-but-quiet panel;
+    // neither is something to interrupt the call with a banner about.
+    const show = status.severity !== 'ok';
+    banner.className = show ? `banner ${status.severity} show` : 'banner';
+    bannerText.textContent = status.message;
+
+    // Before the first line lands, the empty state is the whole story — so it
+    // says what the banner would, rather than a generic "waiting".
+    const empty = shadow.querySelector('.empty');
+    if (empty) {
+      empty.textContent = status.message || 'Waiting for captions…';
+    }
+
+    repin();
+  }
+
   function setCall(next: Call | null): void {
     call = next;
     const active = next?.status === 'active';
@@ -654,7 +692,7 @@ export async function mountHud(callbacks: HudCallbacks): Promise<HudHandle> {
     host.remove();
   }
 
-  return { addLine, setInsights, setCall, destroy };
+  return { addLine, setInsights, setCall, setCaptionStatus, destroy };
 }
 
 function clamp(value: number, min: number, max: number): number {
